@@ -15,12 +15,7 @@ use axum::{
 use futures_util::{SinkExt, StreamExt};
 use tokio::sync::mpsc;
 use typing_core::{
-    exercise,
-    goals::Module,
-    lesson::Lesson,
-    load_layout,
-    stats::Session,
-    typist::Correction,
+    exercise, goals::Module, lesson::Lesson, load_layout, stats::Session, typist::Correction,
 };
 
 use crate::protocol::{
@@ -28,7 +23,7 @@ use crate::protocol::{
 };
 
 use super::{
-    leaderboard::{Submission},
+    leaderboard::Submission,
     verify::{verify, Expectation},
     AppState, BoardChanged,
 };
@@ -143,16 +138,20 @@ async fn handle(
     match request {
         ClientMessage::Ping => vec![ServerMessage::Pong],
 
-        ClientMessage::Start { module, layout, language, lesson, seed } => {
-            match start(state, module, &layout, &language, lesson, seed) {
-                Ok((started, reply)) => {
-                    *active = Some(started);
-                    *pending = None;
-                    vec![reply]
-                }
-                Err(reply) => vec![reply],
+        ClientMessage::Start {
+            module,
+            layout,
+            language,
+            lesson,
+            seed,
+        } => match start(state, module, &layout, &language, lesson, seed) {
+            Ok((started, reply)) => {
+                *active = Some(started);
+                *pending = None;
+                vec![reply]
             }
-        }
+            Err(reply) => vec![reply],
+        },
 
         ClientMessage::Touches { touches } => {
             let Some(current) = active.as_mut() else {
@@ -220,7 +219,12 @@ async fn handle(
             });
             *active = None;
 
-            vec![ServerMessage::Scored { score, goals_met, publishable, would_rank }]
+            vec![ServerMessage::Scored {
+                score,
+                goals_met,
+                publishable,
+                would_rank,
+            }]
         }
 
         ClientMessage::Publish { nickname } => {
@@ -372,7 +376,10 @@ async fn board_reply(state: &AppState, module: Module, language: &str) -> Vec<Se
 }
 
 fn problem(code: ProblemCode, detail: impl Into<String>) -> ServerMessage {
-    ServerMessage::Problem { code, detail: detail.into() }
+    ServerMessage::Problem {
+        code,
+        detail: detail.into(),
+    }
 }
 
 #[cfg(test)]
@@ -424,7 +431,9 @@ mod tests {
     fn batching_does_not_change_the_score() {
         // Whatever the client's batch size, the server must see the same session:
         // gaps are recorded between consecutive keystrokes, not within a batch.
-        let stream: Vec<Touch> = (0..12).map(|_| touch(TouchKind::Correct, 100_000)).collect();
+        let stream: Vec<Touch> = (0..12)
+            .map(|_| touch(TouchKind::Correct, 100_000))
+            .collect();
 
         let mut whole = active();
         accumulate(&mut whole, &stream);
@@ -439,8 +448,15 @@ mod tests {
             accumulate(&mut in_fives, chunk);
         }
 
-        assert_eq!(whole.session.intervals_us.len(), 11, "12 keystrokes, 11 gaps");
-        assert_eq!(one_at_a_time.session.intervals_us, whole.session.intervals_us);
+        assert_eq!(
+            whole.session.intervals_us.len(),
+            11,
+            "12 keystrokes, 11 gaps"
+        );
+        assert_eq!(
+            one_at_a_time.session.intervals_us,
+            whole.session.intervals_us
+        );
         assert_eq!(in_fives.session.intervals_us, whole.session.intervals_us);
         assert_eq!(one_at_a_time.session.score(), whole.session.score());
         assert_eq!(in_fives.session.score(), whole.session.score());

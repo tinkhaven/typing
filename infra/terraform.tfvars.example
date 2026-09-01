@@ -1,11 +1,19 @@
-# Copy to terraform.tfvars and adjust. Defaults suit typing.tinkhaven.com.
+# Copy to infra/terraform.tfvars (gitignored) and fill in your own values.
+#
+# domain_name and route53_zone_name are required — there are deliberately no
+# defaults, so nothing deployment-specific lives in the repository.
 
-# aws_region        = "eu-west-1"
-# domain_name       = "typing.tinkhaven.com"
-# route53_zone_name = "tinkhaven.com"
+domain_name       = "typing.example.com"
+route53_zone_name = "example.com"
 
-# X86_64 if you build images on an Intel machine.
+# EU region by default; the ALB certificate is issued in the same region.
+# aws_region = "eu-west-1"
+
+# X86_64 if you build container images on an Intel machine.
 # cpu_architecture = "ARM64"
 
-# See the variable's comment before raising this above 1.
+# Name prefix for every resource.
+# project = "typing"
+
+# See the variable's comment in variables.tf before raising this above 1.
 # desired_count = 1

@@ -167,7 +167,11 @@ pub fn generate(request: Request<'_>, seed: u64) -> Result<Exercise, GenerateErr
         }
     };
 
-    Ok(Exercise { module: request.module, seed, text })
+    Ok(Exercise {
+        module: request.module,
+        seed,
+        text,
+    })
 }
 
 /// Basic: eight lines of nine five-letter groups drawn from the lesson's keys.
@@ -212,11 +216,7 @@ fn basic_drill(rng: &mut Rng, char_set: &[char]) -> String {
 }
 
 /// Adaptability: four paragraphs of 22 invented words and numbers.
-fn adaptability(
-    rng: &mut Rng,
-    layout: &Layout,
-    stop_marks: bool,
-) -> Result<String, GenerateError> {
+fn adaptability(rng: &mut Rng, layout: &Layout, stop_marks: bool) -> Result<String, GenerateError> {
     let vowels = layout.vowels();
     let consonants = layout.consonants();
     let symbols = layout.symbols();
@@ -268,7 +268,11 @@ fn nonsense_word(
         // Roughly one character in 25 is punctuation rather than a letter.
         if rng.usually(25) {
             let ch = if position % 2 == 1 {
-                if rng.usually(30) { pick(rng, vowels) } else { pick(rng, consonants) }
+                if rng.usually(30) {
+                    pick(rng, vowels)
+                } else {
+                    pick(rng, consonants)
+                }
             } else if rng.usually(50) {
                 pick(rng, consonants)
             } else {
@@ -316,11 +320,7 @@ fn four_digits(rng: &mut Rng) -> String {
 }
 
 /// Velocity: four paragraphs of 20 real words, chosen independently.
-fn velocity(
-    rng: &mut Rng,
-    corpus: &Corpus,
-    stop_marks: bool,
-) -> Result<String, GenerateError> {
+fn velocity(rng: &mut Rng, corpus: &Corpus, stop_marks: bool) -> Result<String, GenerateError> {
     if corpus.words.is_empty() {
         return Err(GenerateError::CorpusEmpty {
             language: corpus.language.clone(),
@@ -333,7 +333,11 @@ fn velocity(
         let mut words: Vec<String> = Vec::with_capacity(VELO_WORDS);
         for index in 0..VELO_WORDS {
             let word = pick_ref(rng, &corpus.words);
-            words.push(if index == 0 { capitalise(word) } else { word.clone() });
+            words.push(if index == 0 {
+                capitalise(word)
+            } else {
+                word.clone()
+            });
         }
         out.push_str(&words.join(" "));
         if stop_marks {
@@ -379,7 +383,8 @@ fn pick(rng: &mut Rng, from: &[char]) -> char {
 
 /// Picks a string reference from a non-empty slice.
 fn pick_ref<'a>(rng: &mut Rng, from: &'a [String]) -> &'a String {
-    rng.choose(from).expect("caller checked the slice is non-empty")
+    rng.choose(from)
+        .expect("caller checked the slice is non-empty")
 }
 
 /// Uppercases the first character, leaving the rest alone.
@@ -426,7 +431,13 @@ mod tests {
         lesson: Option<&'a Lesson>,
         corpus: Option<&'a Corpus>,
     ) -> Request<'a> {
-        Request { module, layout, lesson, corpus, stop_marks: true }
+        Request {
+            module,
+            layout,
+            lesson,
+            corpus,
+            stop_marks: true,
+        }
     }
 
     // ---- reproducibility -------------------------------------------------
@@ -569,7 +580,11 @@ mod tests {
         let layout = qwerty();
         let req = request(Module::Adaptability, &layout, None, None);
         let any_digits = (0..20).any(|seed| {
-            generate(req, seed).unwrap().text.chars().any(|c| c.is_ascii_digit())
+            generate(req, seed)
+                .unwrap()
+                .text
+                .chars()
+                .any(|c| c.is_ascii_digit())
         });
         assert!(any_digits, "no numbers generated in 20 exercises");
     }
@@ -651,7 +666,10 @@ mod tests {
         let req = request(Module::Fluidness, &layout, None, Some(&empty));
         assert!(matches!(
             generate(req, 1),
-            Err(GenerateError::CorpusEmpty { needs: "paragraphs", .. })
+            Err(GenerateError::CorpusEmpty {
+                needs: "paragraphs",
+                ..
+            })
         ));
     }
 }

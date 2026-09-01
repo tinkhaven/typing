@@ -55,12 +55,7 @@ pub fn parse_paragraphs(src: &str) -> Vec<String> {
     let normalised = src.replace("\r\n", "\n").replace('\r', "\n");
     normalised
         .split("\n\n")
-        .map(|block| {
-            block
-                .split_whitespace()
-                .collect::<Vec<_>>()
-                .join(" ")
-        })
+        .map(|block| block.split_whitespace().collect::<Vec<_>>().join(" "))
         .filter(|paragraph| !paragraph.is_empty())
         .take(MAX_PARAGRAPHS)
         .collect()
@@ -81,11 +76,7 @@ mod tests {
         let src = "First one.\n\nSecond one,\nwrapped across lines.\n\n\nThird.\n";
         assert_eq!(
             parse_paragraphs(src),
-            vec![
-                "First one.",
-                "Second one, wrapped across lines.",
-                "Third.",
-            ]
+            vec!["First one.", "Second one, wrapped across lines.", "Third.",]
         );
     }
 
@@ -96,7 +87,10 @@ mod tests {
 
     #[test]
     fn caps_paragraph_count() {
-        let src = (0..250).map(|i| format!("p{i}")).collect::<Vec<_>>().join("\n\n");
+        let src = (0..250)
+            .map(|i| format!("p{i}"))
+            .collect::<Vec<_>>()
+            .join("\n\n");
         assert_eq!(parse_paragraphs(&src).len(), MAX_PARAGRAPHS);
     }
 

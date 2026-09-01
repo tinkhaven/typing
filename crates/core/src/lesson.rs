@@ -67,8 +67,17 @@ impl Lesson {
 
     /// Whether a key position is part of this lesson, in either grid.
     pub fn includes(&self, row: usize, col: usize) -> bool {
-        self.lower.get(row).and_then(|r| r.get(col)).copied().unwrap_or(false)
-            || self.upper.get(row).and_then(|r| r.get(col)).copied().unwrap_or(false)
+        self.lower
+            .get(row)
+            .and_then(|r| r.get(col))
+            .copied()
+            .unwrap_or(false)
+            || self
+                .upper
+                .get(row)
+                .and_then(|r| r.get(col))
+                .copied()
+                .unwrap_or(false)
     }
 }
 
@@ -115,13 +124,20 @@ pub fn parse_lessons(src: &str) -> Result<Vec<Lesson>, LessonError> {
 
     let finish = |number: u32, masks: &[[bool; COLS]]| -> Result<Lesson, LessonError> {
         if masks.len() != ROWS * 2 {
-            return Err(LessonError::WrongMaskCount { number, found: masks.len() });
+            return Err(LessonError::WrongMaskCount {
+                number,
+                found: masks.len(),
+            });
         }
         let mut lower = [[false; COLS]; ROWS];
         let mut upper = [[false; COLS]; ROWS];
         lower.copy_from_slice(&masks[..ROWS]);
         upper.copy_from_slice(&masks[ROWS..]);
-        Ok(Lesson { number, lower, upper })
+        Ok(Lesson {
+            number,
+            lower,
+            upper,
+        })
     };
 
     for line in src.lines() {
@@ -134,15 +150,15 @@ pub fn parse_lessons(src: &str) -> Result<Vec<Lesson>, LessonError> {
                 lessons.push(finish(previous, &masks)?);
             }
             masks.clear();
-            number = Some(
-                rest.trim()
-                    .parse()
-                    .map_err(|_| LessonError::BadHeader { line: trimmed.to_owned() })?,
-            );
+            number = Some(rest.trim().parse().map_err(|_| LessonError::BadHeader {
+                line: trimmed.to_owned(),
+            })?);
             continue;
         }
         if number.is_none() {
-            return Err(LessonError::BadHeader { line: trimmed.to_owned() });
+            return Err(LessonError::BadHeader {
+                line: trimmed.to_owned(),
+            });
         }
         let mut mask = [false; COLS];
         for (col, ch) in trimmed.chars().take(COLS).enumerate() {
@@ -239,7 +255,11 @@ mod tests {
         for lesson in klavaro_lessons() {
             let set = lesson.char_set(&layout);
             assert!(!set.is_empty(), "lesson {} is empty", lesson.number);
-            assert!(set.len() <= MAX_CHAR_SET, "lesson {} overflows", lesson.number);
+            assert!(
+                set.len() <= MAX_CHAR_SET,
+                "lesson {} overflows",
+                lesson.number
+            );
         }
     }
 
@@ -262,7 +282,10 @@ mod tests {
         let src = "Lesson 01\n00000000000000\n";
         assert!(matches!(
             parse_lessons(src),
-            Err(LessonError::WrongMaskCount { number: 1, found: 1 })
+            Err(LessonError::WrongMaskCount {
+                number: 1,
+                found: 1
+            })
         ));
     }
 

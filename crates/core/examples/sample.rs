@@ -17,7 +17,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let layout = load_layout(&layout_name).ok_or("unknown layout")?;
     let lessons = lesson::klavaro_lessons();
 
-    let data = concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/klavaro-data/corpora");
+    let data = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../assets/klavaro-data/corpora"
+    );
     let corpus = Corpus::new(
         &language,
         &fs::read_to_string(format!("{data}/{language}.words"))?,
@@ -26,7 +29,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("layout {layout_name}, language {language}, seed {seed}\n");
     for module in Module::ALL {
-        let lesson = if module == Module::Basic { Some(&lessons[9]) } else { None };
+        let lesson = if module == Module::Basic {
+            Some(&lessons[9])
+        } else {
+            None
+        };
         let exercise = exercise::generate(
             exercise::Request {
                 module,
@@ -50,7 +57,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
         for line in exercise.text.lines() {
             let shown: String = line.chars().take(76).collect();
-            println!("   {shown}{}", if line.chars().count() > 76 { " …" } else { "" });
+            println!(
+                "   {shown}{}",
+                if line.chars().count() > 76 {
+                    " …"
+                } else {
+                    ""
+                }
+            );
         }
         println!("   [{} characters]\n", exercise.len_chars());
     }

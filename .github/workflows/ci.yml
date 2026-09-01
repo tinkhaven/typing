@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege by default. No job here needs to write anything.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  # Fail the build on warnings rather than letting them accumulate.
+  RUSTFLAGS: -D warnings
+  CARGO_LEPTOS_VERSION: 0.3.7
+  WASM_BINDGEN_VERSION: 0.2.127
+
+jobs:
+  # Runs first and alone: if something leaked, nothing else matters.
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The scanner walks every commit, so it needs the whole history.
+          fetch-depth: 0
+
+      - name: Scan every blob in every commit
+        run: ./scripts/check-secrets.sh --history
+
+      - name: Cross-check with gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          set -euo pipefail
+          # Fetched from the upstream release rather than run as a third-party
+          # action, so the pipeline stays free of Actions it does not control.
+          url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL "$url" -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks git --redact --no-banner .
+
+  rust:
+    name: Format, lint, test
+    runs-on: ubuntu-latest
+    needs: secrets
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up the toolchain
+        run: |
+          set -euo pipefail
+          rustup toolchain install stable --profile minimal \
+            --component rustfmt --component clippy
+          rustup default stable
+          rustup target add wasm32-unknown-unknown
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      - name: Formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (server)
+        run: cargo clippy --workspace --all-targets --no-default-features --features typing-web/ssr
+
+      - name: Clippy (browser client)
+        run: |
+          cargo clippy -p typing-web --no-default-features --features hydrate \
+            --target wasm32-unknown-unknown
+
+      - name: Tests
+        run: |
+          cargo test -p typing-core
+          cargo test -p typing-web --no-default-features --features ssr
+
+  build:
+    name: Release build and socket smoke test
+    runs-on: ubuntu-latest
+    needs: rust
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up the toolchain
+        run: |
+          set -euo pipefail
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add wasm32-unknown-unknown
+          # Prebuilt binaries: compiling these from source needs several GB.
+          curl -fsSL https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          cargo binstall --no-confirm --locked \
+            "cargo-leptos@${CARGO_LEPTOS_VERSION}" \
+            "wasm-bindgen-cli@${WASM_BINDGEN_VERSION}"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: cargo-release-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: cargo-release-${{ runner.os }}-
+
+      - name: Build
+        run: cargo leptos build --release
+
+      - name: Report the size the visitor actually downloads
+        run: |
+          set -euo pipefail
+          wasm=target/site/pkg/typing.wasm
+          printf 'wasm: %s raw, %s gzipped\n' \
+            "$(du -h "$wasm" | cut -f1)" \
+            "$(gzip -c "$wasm" | wc -c | awk '{printf "%.0f KB", $1/1024}')"
+
+      - name: Drive the practice socket end to end
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet websockets
+          LEPTOS_OUTPUT_NAME=typing LEPTOS_SITE_ROOT=target/site \
+          LEPTOS_SITE_PKG_DIR=pkg LEPTOS_SITE_ADDR=127.0.0.1:8080 \
+          KLAVARO_DATA_DIR=assets/klavaro-data \
+            ./target/release/typing-web &
+          for _ in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8080/health >/dev/null && break
+            sleep 1
+          done
+          python3 tests/ws_smoke.py
+
+  terraform:
+    name: Terraform validate
+    runs-on: ubuntu-latest
+    needs: secrets
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate
+        run: |
+          set -euo pipefail
+          # No credentials are configured for this job, and none are needed:
+          # `validate` never contacts AWS.
+          terraform -chdir=infra init -backend=false -input=false
+          terraform -chdir=infra validate
+          terraform -chdir=infra fmt -check

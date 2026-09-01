@@ -49,12 +49,26 @@ impl Module {
     /// The bar to clear before moving on.
     pub fn goals(self) -> Goals {
         match self {
-            Module::Basic => Goals { accuracy: 95.0, speed: 10.0, fluidness: None },
-            Module::Adaptability => Goals { accuracy: 98.0, speed: 10.0, fluidness: None },
-            Module::Velocity => Goals { accuracy: 95.0, speed: 50.0, fluidness: None },
-            Module::Fluidness => {
-                Goals { accuracy: 97.0, speed: 50.0, fluidness: Some(70.0) }
-            }
+            Module::Basic => Goals {
+                accuracy: 95.0,
+                speed: 10.0,
+                fluidness: None,
+            },
+            Module::Adaptability => Goals {
+                accuracy: 98.0,
+                speed: 10.0,
+                fluidness: None,
+            },
+            Module::Velocity => Goals {
+                accuracy: 95.0,
+                speed: 50.0,
+                fluidness: None,
+            },
+            Module::Fluidness => Goals {
+                accuracy: 97.0,
+                speed: 50.0,
+                fluidness: Some(70.0),
+            },
         }
     }
 
@@ -146,7 +160,14 @@ mod tests {
     use super::*;
 
     fn score(accuracy: f64, speed: f64, fluidness: Option<f64>) -> Score {
-        Score { accuracy, speed, fluidness, touches: 600, errors: 0, seconds: 60.0 }
+        Score {
+            accuracy,
+            speed,
+            fluidness,
+            touches: 600,
+            errors: 0,
+            seconds: 60.0,
+        }
     }
 
     #[test]
@@ -169,7 +190,10 @@ mod tests {
     fn fluidness_goal_requires_a_fluidness_reading() {
         let goals = Module::Fluidness.goals();
         assert!(goals.met_by(&score(98.0, 55.0, Some(75.0))));
-        assert!(!goals.met_by(&score(98.0, 55.0, Some(65.0))), "fluidness short");
+        assert!(
+            !goals.met_by(&score(98.0, 55.0, Some(65.0))),
+            "fluidness short"
+        );
         assert!(!goals.met_by(&score(98.0, 55.0, None)), "no reading at all");
     }
 

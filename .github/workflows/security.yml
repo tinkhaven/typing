@@ -1,0 +1,41 @@
+name: Security
+
+on:
+  schedule:
+    # Weekly, Monday 06:00 UTC. Catches advisories published after a merge.
+    - cron: '0 6 * * 1'
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependencies:
+    name: Dependency advisories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up the toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: cargo audit
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          cargo binstall --no-confirm cargo-audit
+          cargo audit --deny warnings
+
+  history:
+    name: Full history secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: ./scripts/check-secrets.sh --history

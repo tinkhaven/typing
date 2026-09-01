@@ -6,7 +6,12 @@
 //! caches. The keyboard layouts go the other way — small enough to embed, and
 //! needed to draw the virtual keyboard before any request completes.
 
-use std::{collections::BTreeMap, fs, io, path::{Path, PathBuf}, sync::Arc};
+use std::{
+    collections::BTreeMap,
+    fs, io,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use typing_core::corpus::Corpus;
 
@@ -117,7 +122,10 @@ mod tests {
                 panic!("missing corpus {language}, have {:?}", corpora.languages())
             });
             assert!(corpus.words.len() > 100, "{language} has too few words");
-            assert!(!corpus.paragraphs.is_empty(), "{language} has no paragraphs");
+            assert!(
+                !corpus.paragraphs.is_empty(),
+                "{language} has no paragraphs"
+            );
         }
     }
 

@@ -278,7 +278,10 @@ mod tests {
             erratic.push(if i % 2 == 0 { 40_000 } else { 600_000 });
         }
         let erratic = fluidness(&erratic).unwrap();
-        assert!(erratic < steady, "erratic {erratic} should be < steady {steady}");
+        assert!(
+            erratic < steady,
+            "erratic {erratic} should be < steady {steady}"
+        );
     }
 
     #[test]
@@ -299,7 +302,10 @@ mod tests {
         let mut mostly_fast: Vec<u32> = vec![150_000; 40];
         mostly_fast.extend([2_000_000, 2_000_000]);
         let f = fluidness(&mostly_fast).expect("enough samples");
-        assert!(f > 50.0, "two pauses in 42 keystrokes should not ruin it: {f}");
+        assert!(
+            f > 50.0,
+            "two pauses in 42 keystrokes should not ruin it: {f}"
+        );
     }
 
     #[test]

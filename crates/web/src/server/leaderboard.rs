@@ -154,9 +154,7 @@ impl Leaderboard {
                 }
             }
             _ => {
-                tracing::warn!(
-                    "leaderboard: in-memory (set LEADERBOARD_TABLE to persist results)"
-                );
+                tracing::warn!("leaderboard: in-memory (set LEADERBOARD_TABLE to persist results)");
                 Leaderboard::Memory(Mutex::new(BTreeMap::new()))
             }
         }
@@ -168,11 +166,7 @@ impl Leaderboard {
     }
 
     /// The top [`BOARD_SIZE`] results for a module and language, fastest first.
-    pub async fn top(
-        &self,
-        module: Module,
-        language: &str,
-    ) -> Result<Vec<BoardEntry>, BoardError> {
+    pub async fn top(&self, module: Module, language: &str) -> Result<Vec<BoardEntry>, BoardError> {
         match self {
             Leaderboard::Memory(store) => {
                 let store = store.lock().expect("leaderboard mutex");
@@ -206,9 +200,7 @@ impl Leaderboard {
                     .key_condition_expression("board = :board")
                     .expression_attribute_values(
                         ":board",
-                        aws_sdk_dynamodb::types::AttributeValue::S(partition_key(
-                            module, language,
-                        )),
+                        aws_sdk_dynamodb::types::AttributeValue::S(partition_key(module, language)),
                     )
                     .scan_index_forward(true) // sort key is a complement: ascending is fastest-first
                     .limit(BOARD_SIZE)
@@ -222,7 +214,10 @@ impl Leaderboard {
                     .enumerate()
                     .map(|(i, item)| {
                         let s = |key: &str| {
-                            item.get(key).and_then(|v| v.as_s().ok()).cloned().unwrap_or_default()
+                            item.get(key)
+                                .and_then(|v| v.as_s().ok())
+                                .cloned()
+                                .unwrap_or_default()
                         };
                         let n = |key: &str| {
                             item.get(key)
@@ -252,7 +247,10 @@ impl Leaderboard {
         match self {
             Leaderboard::Memory(store) => {
                 let mut store = store.lock().expect("leaderboard mutex");
-                store.entry(partition).or_default().insert(key, submission.clone());
+                store
+                    .entry(partition)
+                    .or_default()
+                    .insert(key, submission.clone());
             }
             Leaderboard::Dynamo { client, table } => {
                 use aws_sdk_dynamodb::types::AttributeValue as Av;
@@ -269,7 +267,10 @@ impl Leaderboard {
                 if let Some(fluidness) = submission.fluidness {
                     request = request.item("fluidness", Av::N(format!("{fluidness:.2}")));
                 }
-                request.send().await.map_err(|e| BoardError::Store(e.to_string()))?;
+                request
+                    .send()
+                    .await
+                    .map_err(|e| BoardError::Store(e.to_string()))?;
             }
         }
 
@@ -315,7 +316,10 @@ mod tests {
         assert!(widths.windows(2).all(|w| w[0] == w[1]), "{keys:?}");
         let mut sorted = keys.clone();
         sorted.sort();
-        assert_eq!(sorted, vec![keys[2].clone(), keys[1].clone(), keys[0].clone()]);
+        assert_eq!(
+            sorted,
+            vec![keys[2].clone(), keys[1].clone(), keys[0].clone()]
+        );
     }
 
     #[test]
@@ -390,7 +394,10 @@ mod tests {
     async fn a_board_shows_at_most_ten_rows() {
         let board = Leaderboard::in_memory();
         for i in 0..25 {
-            board.submit(submission(&format!("t{i}"), 30.0 + i as f64)).await.unwrap();
+            board
+                .submit(submission(&format!("t{i}"), 30.0 + i as f64))
+                .await
+                .unwrap();
         }
         let top = board.top(Module::Velocity, "nl").await.unwrap();
         assert_eq!(top.len(), BOARD_SIZE as usize);

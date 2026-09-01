@@ -143,7 +143,9 @@ fn health_check() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(feature = "ssr")]
 async fn shutdown_signal() {
     let interrupt = async {
-        tokio::signal::ctrl_c().await.expect("install Ctrl-C handler");
+        tokio::signal::ctrl_c()
+            .await
+            .expect("install Ctrl-C handler");
     };
     #[cfg(unix)]
     let terminate = async {

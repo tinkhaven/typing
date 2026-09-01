@@ -159,7 +159,10 @@ impl core::fmt::Display for ParseError {
                 ROWS * 2
             ),
             ParseError::RowTooWide { name, row, found } => {
-                write!(f, "layout {name}: row {row} has {found} columns, maximum is {COLS}")
+                write!(
+                    f,
+                    "layout {name}: row {row} has {found} columns, maximum is {COLS}"
+                )
             }
             ParseError::BadFingerDigit { row, col, found } => write!(
                 f,
@@ -231,14 +234,22 @@ impl Layout {
         for row in 0..ROWS {
             for col in 0..COLS {
                 if self.lower(row, col) == Some(ch) {
-                    return Some(KeyPos { row, col, shifted: false });
+                    return Some(KeyPos {
+                        row,
+                        col,
+                        shifted: false,
+                    });
                 }
             }
         }
         for row in 0..ROWS {
             for col in 0..COLS {
                 if self.upper(row, col) == Some(ch) {
-                    return Some(KeyPos { row, col, shifted: true });
+                    return Some(KeyPos {
+                        row,
+                        col,
+                        shifted: true,
+                    });
                 }
             }
         }
@@ -308,7 +319,10 @@ impl Layout {
         let mut out = Vec::new();
         for row in 0..ROWS {
             for col in 0..COLS {
-                for ch in [self.lower(row, col), self.upper(row, col)].into_iter().flatten() {
+                for ch in [self.lower(row, col), self.upper(row, col)]
+                    .into_iter()
+                    .flatten()
+                {
                     if is_symbol(ch) {
                         out.push(ch);
                     }
@@ -375,7 +389,13 @@ impl FingerMap {
                     Some(finger) => fingers[row][col] = Some(finger),
                     // Upstream's map uses '0' as filler past the last real key.
                     None if ch == '0' || ch.is_whitespace() => {}
-                    None => return Err(ParseError::BadFingerDigit { row, col, found: ch }),
+                    None => {
+                        return Err(ParseError::BadFingerDigit {
+                            row,
+                            col,
+                            found: ch,
+                        })
+                    }
                 }
             }
         }
@@ -450,15 +470,39 @@ mod tests {
     fn rejects_an_overwide_row() {
         let wide = QWERTY_US.replace("asdfghjkl;'   ", "asdfghjkl;'aaaaaaa");
         let err = Layout::parse("wide", &wide).unwrap_err();
-        assert!(matches!(err, ParseError::RowTooWide { row: 2, .. }), "{err}");
+        assert!(
+            matches!(err, ParseError::RowTooWide { row: 2, .. }),
+            "{err}"
+        );
     }
 
     #[test]
     fn finds_characters_preferring_unshifted() {
         let l = qwerty();
-        assert_eq!(l.find('f'), Some(KeyPos { row: 2, col: 3, shifted: false }));
-        assert_eq!(l.find('F'), Some(KeyPos { row: 2, col: 3, shifted: true }));
-        assert_eq!(l.find('?'), Some(KeyPos { row: 3, col: 10, shifted: true }));
+        assert_eq!(
+            l.find('f'),
+            Some(KeyPos {
+                row: 2,
+                col: 3,
+                shifted: false
+            })
+        );
+        assert_eq!(
+            l.find('F'),
+            Some(KeyPos {
+                row: 2,
+                col: 3,
+                shifted: true
+            })
+        );
+        assert_eq!(
+            l.find('?'),
+            Some(KeyPos {
+                row: 3,
+                col: 10,
+                shifted: true
+            })
+        );
         assert_eq!(l.find('€'), None);
     }
 
@@ -521,6 +565,9 @@ mod tests {
     #[test]
     fn finger_map_rejects_junk() {
         let err = FingerMap::parse("1234\n1234\n1234\n12x4\n").unwrap_err();
-        assert!(matches!(err, ParseError::BadFingerDigit { found: 'x', .. }), "{err}");
+        assert!(
+            matches!(err, ParseError::BadFingerDigit { found: 'x', .. }),
+            "{err}"
+        );
     }
 }

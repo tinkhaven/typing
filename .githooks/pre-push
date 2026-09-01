@@ -1,0 +1,43 @@
+#!/usr/bin/env sh
+#
+# Blocks a push that would make a secret public.
+#
+# The pre-commit hook only sees what one commit adds. This one scans every blob
+# in the commits actually being pushed — including files an earlier commit added
+# and a later one removed, which are still in the history and still public once
+# pushed.
+set -eu
+
+ROOT="$(git rev-parse --show-toplevel)"
+ZERO="$(git hash-object --stdin </dev/null | tr '0-9a-f' '0')"
+status=0
+
+# git feeds pre-push one line per ref: <local ref> <local sha> <remote ref> <remote sha>
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  # Deleting a ref pushes nothing.
+  [ "$local_sha" = "$ZERO" ] && continue
+
+  if [ "$remote_sha" = "$ZERO" ]; then
+    # New branch on the remote: everything not already published is new.
+    # Fall back to the full history if there are no other remote refs to
+    # subtract, so a first push is still scanned rather than skipped.
+    if [ -n "$(git for-each-ref --format='%(refname)' refs/remotes 2>/dev/null)" ]; then
+      RANGE="$local_sha --not --remotes"
+    else
+      RANGE="$local_sha"
+    fi
+  else
+    RANGE="$remote_sha..$local_sha"
+  fi
+
+  # shellcheck disable=SC2086
+  "$ROOT/scripts/check-secrets.sh" --range "$RANGE" || status=1
+done
+
+# A second opinion, when it is installed. Different rule set, same veto.
+if [ "$status" -eq 0 ] && command -v gitleaks >/dev/null 2>&1; then
+  printf '\033[1m== gitleaks ==\033[0m\n'
+  gitleaks git --redact --no-banner "$ROOT" || status=1
+fi
+
+exit "$status"

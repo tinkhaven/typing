@@ -9,14 +9,26 @@
 # ---------------------------------------------------------------------------
 FROM rust:1-bookworm AS build
 
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
 ARG CARGO_LEPTOS_VERSION=0.3.7
 ARG WASM_BINDGEN_VERSION=0.2.127
 
 RUN rustup target add wasm32-unknown-unknown
-# Cached as its own layer: this is the slow part, and it only changes when the
-# versions above do.
-RUN cargo install --locked cargo-leptos --version ${CARGO_LEPTOS_VERSION} \
- && cargo install --locked wasm-bindgen-cli --version ${WASM_BINDGEN_VERSION}
+
+# Fetch prebuilt binaries rather than compiling the toolchain from source.
+# `cargo install` on these two needs several GB of RAM and many minutes, and
+# fails outright on a Docker daemon with a modest memory limit — which is how
+# most laptops are configured. cargo-binstall pulls the upstream release
+# artifacts instead, so this layer is quick and cheap.
+#
+# Cached as its own layer: it only changes when the versions above do.
+RUN curl -fsSL https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash \
+ && cargo binstall --no-confirm --locked \
+      cargo-leptos@${CARGO_LEPTOS_VERSION} \
+      wasm-bindgen-cli@${WASM_BINDGEN_VERSION}
 
 WORKDIR /build
 COPY Cargo.toml Cargo.lock ./

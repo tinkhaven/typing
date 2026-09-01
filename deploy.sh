@@ -4,14 +4,18 @@
 #
 # Provision the infrastructure first:
 #
-#   export AWS_PROFILE=tinkhaven-admin-prod
+#   export AWS_PROFILE=<your-admin-profile>
+#   cp infra/terraform.tfvars.example infra/terraform.tfvars   # then edit it
 #   terraform -chdir=infra init
 #   terraform -chdir=infra apply
 #
 # Then every deploy is just: ./deploy.sh
 set -euo pipefail
 
-: "${AWS_PROFILE:=tinkhaven-admin-prod}"
+# Required rather than defaulted. Naming a specific profile in a public
+# repository would publish internal account naming for no benefit, and a wrong
+# default is worse than no default when the command it feeds deploys things.
+: "${AWS_PROFILE:?set AWS_PROFILE to the profile that can deploy, e.g. export AWS_PROFILE=my-admin-profile}"
 export AWS_PROFILE
 
 cd "$(dirname "$0")"

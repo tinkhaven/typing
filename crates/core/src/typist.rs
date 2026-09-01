@@ -267,7 +267,9 @@ impl Typist {
             return Press::Backspaced;
         }
 
-        let Key::Char(typed) = key else { unreachable!("backspace handled above") };
+        let Key::Char(typed) = key else {
+            unreachable!("backspace handled above")
+        };
         let Some(&wanted) = self.expected.get(self.cursor) else {
             return Press::Ignored;
         };
@@ -422,7 +424,10 @@ mod tests {
         let mut t = Typist::new("fj", Correction::Required);
         t.press(Key::Char('f'), 100_000);
         t.press(Key::Char('x'), 200_000);
-        assert!(!t.is_finished(), "must not finish on an uncorrected mistake");
+        assert!(
+            !t.is_finished(),
+            "must not finish on an uncorrected mistake"
+        );
         t.press(Key::Backspace, 300_000);
         t.press(Key::Char('j'), 400_000);
         assert!(t.is_finished());
@@ -508,7 +513,10 @@ mod tests {
     fn replaying_the_counted_transitions_reproduces_the_session() {
         // This is exactly what the server does with the reported stream, so the
         // two must land on the same numbers.
-        for (text, module) in [("fjfjfjfj", Module::Velocity), ("fjfjfjfj", Module::Fluidness)] {
+        for (text, module) in [
+            ("fjfjfjfj", Module::Velocity),
+            ("fjfjfjfj", Module::Fluidness),
+        ] {
             let mode = Correction::for_module(module);
             let mut typist = Typist::new(text, mode);
             let mut replayed = crate::stats::Session::new();
@@ -516,7 +524,11 @@ mod tests {
             for (i, ch) in text.chars().enumerate() {
                 at += 100_000;
                 // Get one wrong, then fix it if the mode requires it.
-                let key = if i == 2 { Key::Char('q') } else { Key::Char(ch) };
+                let key = if i == 2 {
+                    Key::Char('q')
+                } else {
+                    Key::Char(ch)
+                };
                 if let Some(counted) = typist.press(key, at).counted(mode) {
                     counted.apply(&mut replayed, at);
                 }
@@ -544,9 +556,18 @@ mod tests {
     #[test]
     fn only_fluidness_allows_correction() {
         assert_eq!(Correction::for_module(Module::Basic), Correction::Forbidden);
-        assert_eq!(Correction::for_module(Module::Adaptability), Correction::Forbidden);
-        assert_eq!(Correction::for_module(Module::Velocity), Correction::Forbidden);
-        assert_eq!(Correction::for_module(Module::Fluidness), Correction::Required);
+        assert_eq!(
+            Correction::for_module(Module::Adaptability),
+            Correction::Forbidden
+        );
+        assert_eq!(
+            Correction::for_module(Module::Velocity),
+            Correction::Forbidden
+        );
+        assert_eq!(
+            Correction::for_module(Module::Fluidness),
+            Correction::Required
+        );
     }
 
     #[test]

@@ -3,29 +3,33 @@ variable "aws_region" {
     Region for everything, including the ACM certificate.
 
     Unlike CloudFront, an Application Load Balancer needs its certificate in its
-    own region, so there is no us-east-1 exception here. Ireland keeps visitor
-    traffic and the leaderboard inside the EU.
+    own region, so there is no us-east-1 exception here. An EU region keeps
+    visitor traffic and the leaderboard inside the EU.
   EOT
   type        = string
   default     = "eu-west-1"
 }
 
 variable "domain_name" {
-  description = "Public hostname for the site."
+  description = <<-EOT
+    Public hostname for the site.
+
+    Deliberately has no default. Deployment-specific values belong in an
+    untracked terraform.tfvars, not in a public repository — and a default here
+    would be a footgun for anyone else deploying this.
+  EOT
   type        = string
-  default     = "typing.tinkhaven.com"
 }
 
 variable "route53_zone_name" {
-  description = "Hosted zone that manages the domain."
+  description = "Hosted zone that manages the domain. No default, as above."
   type        = string
-  default     = "tinkhaven.com"
 }
 
 variable "project" {
   description = "Name prefix and tag applied to every resource."
   type        = string
-  default     = "tinkhaven-typing"
+  default     = "typing"
 }
 
 variable "task_cpu" {

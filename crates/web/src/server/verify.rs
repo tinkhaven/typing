@@ -95,7 +95,10 @@ impl core::fmt::Display for Rejection {
             Rejection::ImpossibleSpeed { speed, limit } => {
                 write!(f, "{speed:.0} wpm exceeds the {limit:.0} wpm ceiling")
             }
-            Rejection::TimingMismatch { intervals_us, elapsed_us } => write!(
+            Rejection::TimingMismatch {
+                intervals_us,
+                elapsed_us,
+            } => write!(
                 f,
                 "gaps total {intervals_us} µs but the session lasted {elapsed_us} µs"
             ),
@@ -113,11 +116,7 @@ impl std::error::Error for Rejection {}
 /// `complete` says whether the report claims a finished exercise; only finished
 /// ones are eligible for a board, and only those are held to the exact keystroke
 /// count.
-pub fn verify(
-    session: &Session,
-    expected: &Expectation,
-    complete: bool,
-) -> Result<(), Rejection> {
+pub fn verify(session: &Session, expected: &Expectation, complete: bool) -> Result<(), Rejection> {
     let touches = session.touches;
 
     // Every position of the text yields exactly one counted keystroke, in both
@@ -125,10 +124,16 @@ pub fn verify(
     // the keystroke that finally lands. So more touches than characters is
     // impossible however the typist behaved.
     if touches > expected.chars {
-        return Err(Rejection::TooManyTouches { touches, chars: expected.chars });
+        return Err(Rejection::TooManyTouches {
+            touches,
+            chars: expected.chars,
+        });
     }
     if complete && touches < expected.chars {
-        return Err(Rejection::Incomplete { touches, chars: expected.chars });
+        return Err(Rejection::Incomplete {
+            touches,
+            chars: expected.chars,
+        });
     }
 
     if touches > 0 && session.elapsed_us == 0 {
@@ -152,7 +157,10 @@ pub fn verify(
 
     let speed = session.score().speed;
     if speed > MAX_PLAUSIBLE_WPM {
-        return Err(Rejection::ImpossibleSpeed { speed, limit: MAX_PLAUSIBLE_WPM });
+        return Err(Rejection::ImpossibleSpeed {
+            speed,
+            limit: MAX_PLAUSIBLE_WPM,
+        });
     }
 
     Ok(())
@@ -186,7 +194,10 @@ mod tests {
     fn an_honest_run_is_accepted() {
         let text = "the quick brown fox jumps over the lazy dog";
         let session = honest_run(text, Module::Velocity, 200_000);
-        assert_eq!(verify(&session, &expectation(text, Module::Velocity), true), Ok(()));
+        assert_eq!(
+            verify(&session, &expectation(text, Module::Velocity), true),
+            Ok(())
+        );
     }
 
     #[test]
@@ -217,7 +228,11 @@ mod tests {
         typist.press(Key::Char('j'), 600_000);
         assert!(typist.is_finished());
         assert_eq!(
-            verify(typist.session(), &expectation(text, Module::Fluidness), true),
+            verify(
+                typist.session(),
+                &expectation(text, Module::Fluidness),
+                true
+            ),
             Ok(())
         );
     }
@@ -229,7 +244,10 @@ mod tests {
         session.correct(1_000_000); // one keystroke too many
         assert!(matches!(
             verify(&session, &expectation(text, Module::Velocity), true),
-            Err(Rejection::TooManyTouches { touches: 5, chars: 4 })
+            Err(Rejection::TooManyTouches {
+                touches: 5,
+                chars: 4
+            })
         ));
     }
 
@@ -239,7 +257,10 @@ mod tests {
         let bigger = expectation("fjfjfjfjfj", Module::Velocity);
         assert!(matches!(
             verify(&session, &bigger, true),
-            Err(Rejection::Incomplete { touches: 4, chars: 10 })
+            Err(Rejection::Incomplete {
+                touches: 4,
+                chars: 10
+            })
         ));
         // The same partial run is fine when not claiming completion.
         assert_eq!(verify(&session, &bigger, false), Ok(()));
@@ -254,7 +275,10 @@ mod tests {
             session.correct(i * 2_000);
         }
         let verdict = verify(&session, &expectation(&text, Module::Velocity), true);
-        assert!(matches!(verdict, Err(Rejection::ImpossibleSpeed { .. })), "{verdict:?}");
+        assert!(
+            matches!(verdict, Err(Rejection::ImpossibleSpeed { .. })),
+            "{verdict:?}"
+        );
     }
 
     #[test]
@@ -286,7 +310,10 @@ mod tests {
         let mut session = honest_run("fjfj", Module::Velocity, 200_000);
         session.intervals_us.push(u32::MAX);
         let verdict = verify(&session, &expectation("fjfj", Module::Velocity), true);
-        assert!(matches!(verdict, Err(Rejection::TimingMismatch { .. })), "{verdict:?}");
+        assert!(
+            matches!(verdict, Err(Rejection::TimingMismatch { .. })),
+            "{verdict:?}"
+        );
     }
 
     #[test]
@@ -295,12 +322,18 @@ mod tests {
         session.correct(100_000);
         session.intervals_us = vec![1_000, 1_000, 1_000];
         let verdict = verify(&session, &expectation("f", Module::Velocity), true);
-        assert!(matches!(verdict, Err(Rejection::TooManyIntervals { .. })), "{verdict:?}");
+        assert!(
+            matches!(verdict, Err(Rejection::TooManyIntervals { .. })),
+            "{verdict:?}"
+        );
     }
 
     #[test]
     fn an_empty_report_is_harmless() {
         let session = Session::new();
-        assert_eq!(verify(&session, &expectation("fjfj", Module::Velocity), false), Ok(()));
+        assert_eq!(
+            verify(&session, &expectation("fjfj", Module::Velocity), false),
+            Ok(())
+        );
     }
 }

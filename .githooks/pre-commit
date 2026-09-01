@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+#
+# Blocks a commit that would introduce a secret.
+#
+# Installed by `make hooks`, which points core.hooksPath at this directory —
+# .git/hooks is not tracked, so a hook living there protects only the person who
+# created it. This one is versioned, so everybody who runs `make hooks` gets it.
+set -eu
+
+ROOT="$(git rev-parse --show-toplevel)"
+"$ROOT/scripts/check-secrets.sh" --staged

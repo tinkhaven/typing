@@ -1,3 +1,4 @@
+# Build output
 /target
 /crates/*/target
 /dist
@@ -9,9 +10,51 @@
 # its extracted tree stay out of git.
 /klavaro/
 
-# Terraform
+# ---------------------------------------------------------------------------
+# Never commit anything below. This list is belt-and-braces: the real guard is
+# scripts/check-secrets.sh, enforced by the hooks that `make hooks` installs
+# and by CI. An ignore rule only helps if the file is named as expected.
+# ---------------------------------------------------------------------------
+
+# Environment and secret files
+.env
+.env.*
+!.env.example
+.envrc
+secrets.yml
+secrets.yaml
+secrets.json
+secrets.toml
+*.secret
+
+# Credentials and keys
+*.pem
+*.key
+!**/assets/**/*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+*.ppk
+.netrc
+.npmrc
+.pypirc
+kubeconfig
+*.kdbx
+
+# Cloud provider state and credentials
+.aws/
+credentials
+**/*.tfstate
+**/*.tfstate.*
 **/.terraform/*
-*.tfstate
-*.tfstate.*
-*.tfvars
-!*.tfvars.example
+**/*.tfvars
+!**/*.tfvars.example
+.terraform.lock.hcl
+
+# Local tooling
+/.claude/settings.local.json

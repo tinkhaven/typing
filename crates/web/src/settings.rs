@@ -60,8 +60,12 @@ impl Settings {
     /// than trusted. A layout name that no longer exists would otherwise leave
     /// the keyboard blank.
     pub fn restore(&self) {
-        let Some(raw) = read_storage(STORAGE_KEY) else { return };
-        let Ok(saved) = serde_json::from_str::<Saved>(&raw) else { return };
+        let Some(raw) = read_storage(STORAGE_KEY) else {
+            return;
+        };
+        let Ok(saved) = serde_json::from_str::<Saved>(&raw) else {
+            return;
+        };
 
         if let Some(locale) = saved.locale.as_deref().and_then(Locale::from_code) {
             self.locale.set(locale);
@@ -110,7 +114,11 @@ struct Saved {
 
 #[cfg(feature = "hydrate")]
 fn read_storage(key: &str) -> Option<String> {
-    web_sys::window()?.local_storage().ok()??.get_item(key).ok()?
+    web_sys::window()?
+        .local_storage()
+        .ok()??
+        .get_item(key)
+        .ok()?
 }
 
 #[cfg(feature = "hydrate")]

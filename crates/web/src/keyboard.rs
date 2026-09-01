@@ -40,11 +40,13 @@ pub fn VirtualKeyboard(
     let shift_hand = Memo::new(move |_| {
         // Shift is pressed with the hand *opposite* the one reaching the key.
         target.get().and_then(|pos| {
-            FINGERS.at(pos.row, pos.col).map(|finger| match finger.hand() {
-                Hand::Left => Hand::Right,
-                Hand::Right => Hand::Left,
-                Hand::Either => Hand::Either,
-            })
+            FINGERS
+                .at(pos.row, pos.col)
+                .map(|finger| match finger.hand() {
+                    Hand::Left => Hand::Right,
+                    Hand::Right => Hand::Left,
+                    Hand::Either => Hand::Either,
+                })
         })
     });
 
@@ -137,7 +139,10 @@ fn Key(
         if let Some(finger) = finger {
             class.push_str(&format!(" finger-{}", finger.slot()));
         }
-        if target.get().is_some_and(|pos| pos.row == row && pos.col == col) {
+        if target
+            .get()
+            .is_some_and(|pos| pos.row == row && pos.col == col)
+        {
             class.push_str(" key-next");
         }
         class

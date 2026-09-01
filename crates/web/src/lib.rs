@@ -32,7 +32,12 @@ use leptos_router::{
     StaticSegment,
 };
 
-use crate::{about::About, i18n::{Locale, Msg}, practice::Practice, settings::Settings};
+use crate::{
+    about::About,
+    i18n::{Locale, Msg},
+    practice::Practice,
+    settings::Settings,
+};
 
 /// The HTML document that wraps the application.
 pub fn shell(options: LeptosOptions) -> impl IntoView {

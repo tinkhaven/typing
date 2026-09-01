@@ -110,10 +110,16 @@ run, publishing, and every rejection path.
 Set up once:
 
 ```bash
-export AWS_PROFILE=tinkhaven-admin-prod
+export AWS_PROFILE=<your-admin-profile>
+cp infra/terraform.tfvars.example infra/terraform.tfvars   # set your domain
 terraform -chdir=infra init
 terraform -chdir=infra apply
 ```
+
+`infra/terraform.tfvars` is gitignored. The domain and hosted zone have no
+defaults on purpose: deployment-specific values do not belong in a public
+repository, and a stale default pointed at someone else's domain is worse than
+no default.
 
 Then each deploy:
 

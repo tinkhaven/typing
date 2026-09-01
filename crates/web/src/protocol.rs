@@ -290,16 +290,31 @@ mod tests {
         };
         let json = serde_json::to_string(&problem).unwrap();
         assert!(json.contains("unknown-layout"), "{json}");
-        assert_eq!(serde_json::from_str::<ServerMessage>(&json).unwrap(), problem);
+        assert_eq!(
+            serde_json::from_str::<ServerMessage>(&json).unwrap(),
+            problem
+        );
     }
 
     #[test]
     fn replay_rebuilds_the_same_tally_the_client_had() {
         let touches = vec![
-            Touch { kind: TouchKind::Correct, dt_us: 150_000 },
-            Touch { kind: TouchKind::Correct, dt_us: 150_000 },
-            Touch { kind: TouchKind::Wrong, dt_us: 300_000 },
-            Touch { kind: TouchKind::Correct, dt_us: 150_000 },
+            Touch {
+                kind: TouchKind::Correct,
+                dt_us: 150_000,
+            },
+            Touch {
+                kind: TouchKind::Correct,
+                dt_us: 150_000,
+            },
+            Touch {
+                kind: TouchKind::Wrong,
+                dt_us: 300_000,
+            },
+            Touch {
+                kind: TouchKind::Correct,
+                dt_us: 150_000,
+            },
         ];
         let session = replay(&touches);
         assert_eq!(session.touches, 4);
@@ -311,11 +326,26 @@ mod tests {
     #[test]
     fn replay_honours_stumbles_and_retouches() {
         let touches = vec![
-            Touch { kind: TouchKind::Correct, dt_us: 100_000 },
-            Touch { kind: TouchKind::Correct, dt_us: 100_000 },
-            Touch { kind: TouchKind::Stumble, dt_us: 2_000_000 },
-            Touch { kind: TouchKind::Stumble, dt_us: 100_000 },
-            Touch { kind: TouchKind::Retouched, dt_us: 100_000 },
+            Touch {
+                kind: TouchKind::Correct,
+                dt_us: 100_000,
+            },
+            Touch {
+                kind: TouchKind::Correct,
+                dt_us: 100_000,
+            },
+            Touch {
+                kind: TouchKind::Stumble,
+                dt_us: 2_000_000,
+            },
+            Touch {
+                kind: TouchKind::Stumble,
+                dt_us: 100_000,
+            },
+            Touch {
+                kind: TouchKind::Retouched,
+                dt_us: 100_000,
+            },
         ];
         let session = replay(&touches);
         assert_eq!(session.touches, 3, "stumbles are not touches");
@@ -331,6 +361,9 @@ mod tests {
         assert_eq!(clean_nickname("   "), None);
         assert_eq!(clean_nickname(""), None);
         let long = "x".repeat(100);
-        assert_eq!(clean_nickname(&long).unwrap().chars().count(), MAX_NICKNAME_LEN);
+        assert_eq!(
+            clean_nickname(&long).unwrap().chars().count(),
+            MAX_NICKNAME_LEN
+        );
     }
 }

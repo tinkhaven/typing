@@ -22,9 +22,7 @@ use crate::{
     board::BoardTable,
     i18n::Msg,
     keyboard::VirtualKeyboard,
-    protocol::{
-        BoardEntry, ClientMessage, ServerMessage, Touch, TouchKind, TOUCH_BATCH_SIZE,
-    },
+    protocol::{BoardEntry, ClientMessage, ServerMessage, Touch, TouchKind, TOUCH_BATCH_SIZE},
     settings::Settings,
     socket::{self, Status},
 };
@@ -99,7 +97,12 @@ pub fn Practice() -> impl IntoView {
                         ));
                     }
                 }
-                ServerMessage::Scored { score: scored, publishable: ok, would_rank: rank, .. } => {
+                ServerMessage::Scored {
+                    score: scored,
+                    publishable: ok,
+                    would_rank: rank,
+                    ..
+                } => {
                     score.set(Some(scored));
                     publishable.set(ok);
                     would_rank.set(rank);
@@ -115,14 +118,15 @@ pub fn Practice() -> impl IntoView {
     // Fetch practice text whenever the language changes and a module needs it.
     Effect::new(move |_| {
         let language = settings.corpus_language.get();
-        let needs_text = matches!(
-            settings.module.get(),
-            Module::Velocity | Module::Fluidness
-        );
+        let needs_text = matches!(settings.module.get(), Module::Velocity | Module::Fluidness);
         if !needs_text {
             return;
         }
-        if corpus.read().as_ref().is_some_and(|c| c.language == language) {
+        if corpus
+            .read()
+            .as_ref()
+            .is_some_and(|c| c.language == language)
+        {
             return;
         }
         fetch_corpus(language, corpus);
@@ -272,9 +276,15 @@ pub fn Practice() -> impl IntoView {
             // Show the local score at once; the server's replaces it when its
             // reply arrives, and that is the one the board uses.
             score.set(local);
-            if let Some(session) = typist.read_untracked().as_ref().map(|t| t.session().clone()) {
+            if let Some(session) = typist
+                .read_untracked()
+                .as_ref()
+                .map(|t| t.session().clone())
+            {
                 if server_following.get_untracked() {
-                    socket::send(&ClientMessage::Finish { client_session: session });
+                    socket::send(&ClientMessage::Finish {
+                        client_session: session,
+                    });
                 }
             }
         }
@@ -384,7 +394,11 @@ fn TypingSurface(
     // The character list is fixed for the run; only the colours change, so this
     // recomputes when a new exercise arrives rather than on every keystroke.
     let characters = Memo::new(move |_| {
-        typist.read().as_ref().map(|t| t.text().to_vec()).unwrap_or_default()
+        typist
+            .read()
+            .as_ref()
+            .map(|t| t.text().to_vec())
+            .unwrap_or_default()
     });
 
     view! {
@@ -519,7 +533,9 @@ fn Results(
     });
 
     let publish = move |_| {
-        socket::send(&ClientMessage::Publish { nickname: nickname.get() });
+        socket::send(&ClientMessage::Publish {
+            nickname: nickname.get(),
+        });
         published.set(true);
     };
 
@@ -769,16 +785,27 @@ mod tests {
             at_us += 120_000;
             let press = t.press(Key::Char(ch), at_us);
             if let Some(kind) = touch_kind(press, Correction::Forbidden) {
-                stream.push(Touch { kind, dt_us: 120_000 });
+                stream.push(Touch {
+                    kind,
+                    dt_us: 120_000,
+                });
             }
         }
         assert!(t.is_finished());
-        assert_eq!(stream.len(), generated.len_chars(), "one report per character");
+        assert_eq!(
+            stream.len(),
+            generated.len_chars(),
+            "one report per character"
+        );
 
         let replayed = crate::protocol::replay(&stream);
         assert_eq!(replayed.touches, t.session().touches);
         assert_eq!(replayed.errors, t.session().errors);
-        assert_eq!(replayed.score(), t.score(), "server would score it the same");
+        assert_eq!(
+            replayed.score(),
+            t.score(),
+            "server would score it the same"
+        );
     }
 
     #[test]
@@ -787,7 +814,10 @@ mod tests {
         let mut stream = Vec::new();
         let mut push = |press: Press| {
             if let Some(kind) = touch_kind(press, Correction::Required) {
-                stream.push(Touch { kind, dt_us: 100_000 });
+                stream.push(Touch {
+                    kind,
+                    dt_us: 100_000,
+                });
             }
         };
         push(t.press(Key::Char('f'), 100_000));
@@ -798,7 +828,10 @@ mod tests {
         push(t.press(Key::Char('j'), 600_000));
 
         let replayed = crate::protocol::replay(&stream);
-        assert_eq!(replayed.touches, 4, "four positions, four counted keystrokes");
+        assert_eq!(
+            replayed.touches, 4,
+            "four positions, four counted keystrokes"
+        );
         assert_eq!(replayed.errors, 1);
         assert_eq!(replayed.touches, t.session().touches);
         assert_eq!(replayed.errors, t.session().errors);

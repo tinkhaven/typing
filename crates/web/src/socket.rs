@@ -53,7 +53,11 @@ mod browser {
         let location = web_sys::window()?.location();
         let protocol = location.protocol().ok()?;
         let host = location.host().ok()?;
-        let scheme = if protocol.starts_with("https") { "wss" } else { "ws" };
+        let scheme = if protocol.starts_with("https") {
+            "wss"
+        } else {
+            "ws"
+        };
         Some(format!("{scheme}://{host}/api/ws"))
     }
 
@@ -78,7 +82,9 @@ mod browser {
             Closure::<dyn FnMut()>::new(move || on_status(Status::Open))
         };
         let on_message = Closure::<dyn FnMut(MessageEvent)>::new(move |event: MessageEvent| {
-            let Some(text) = event.data().as_string() else { return };
+            let Some(text) = event.data().as_string() else {
+                return;
+            };
             match serde_json::from_str::<ServerMessage>(&text) {
                 Ok(message) => on_message(message),
                 // A message we cannot read means the bundle and the server
@@ -112,7 +118,9 @@ mod browser {
     }
 
     pub fn send(message: &ClientMessage) -> bool {
-        let Ok(json) = serde_json::to_string(message) else { return false };
+        let Ok(json) = serde_json::to_string(message) else {
+            return false;
+        };
         CONNECTION.with(|slot| {
             slot.borrow()
                 .as_ref()
@@ -156,10 +164,7 @@ mod browser {
 }
 
 /// Opens the connection, reporting messages and status changes as they arrive.
-pub fn connect(
-    on_message: impl Fn(ServerMessage) + 'static,
-    on_status: impl Fn(Status) + 'static,
-) {
+pub fn connect(on_message: impl Fn(ServerMessage) + 'static, on_status: impl Fn(Status) + 'static) {
     browser::connect(on_message, on_status);
 }
 
