@@ -10,6 +10,11 @@ client, Axum for the server, one shared crate holding the parts both agree on.
 > Not affiliated with or endorsed by the Klavaro project. Please report problems
 > with this port here rather than upstream. See [CREDITS.md](CREDITS.md).
 
+**Status: early.** All four modules work and the scoring matches upstream, but
+this is young code and rough in places. Progress charts over time are the main
+Klavaro feature not yet ported; [docs/DIVERGENCE.md](docs/DIVERGENCE.md) lists
+everything else that differs or is missing.
+
 ## The four modules
 
 | Module | What it does | Goal |
