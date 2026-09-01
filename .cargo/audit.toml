@@ -1,0 +1,30 @@
+# cargo-audit configuration.
+#
+# CI runs `cargo audit --deny warnings`, so an unmaintained dependency fails the
+# build. That is the behaviour we want — but it only stays useful if the
+# exceptions below are few, justified, and revisited. Each entry says what it is
+# and what would let us remove it.
+
+[advisories]
+ignore = [
+  # paste 1.0.15 — unmaintained.
+  #
+  # A proc-macro, reached through leptos -> either_of. Proc macros run at
+  # compile time and no part of them ends up in the binary or the wasm bundle,
+  # so "unmaintained" carries no runtime attack surface here. Nothing we can
+  # act on either: the dependency is Leptos's to change.
+  #
+  # Remove when Leptos drops it.
+  "RUSTSEC-2024-0436",
+
+  # proc-macro-error2 2.0.1 — unmaintained.
+  #
+  # Same shape: a compile-time dependency of leptos_macro, absent from the
+  # shipped artifacts.
+  #
+  # Remove when Leptos drops it.
+  "RUSTSEC-2026-0173",
+]
+
+# Deny everything else, including any *new* unmaintained crate.
+informational_warnings = ["unmaintained", "unsound", "notice"]

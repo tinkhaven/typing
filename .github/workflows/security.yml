@@ -29,6 +29,9 @@ jobs:
           set -euo pipefail
           curl -fsSL https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
           cargo binstall --no-confirm cargo-audit
+          # --deny warnings so an unmaintained dependency fails the build too.
+          # The two current exceptions, both compile-time Leptos proc macros,
+          # are listed with reasons in .cargo/audit.toml.
           cargo audit --deny warnings
 
   history:

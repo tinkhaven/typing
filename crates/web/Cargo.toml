@@ -38,8 +38,11 @@ futures-util = { version = "0.3", optional = true, default-features = false, fea
 tower-http = { version = "0.6", optional = true, features = ["fs", "trace", "compression-gzip"] }
 tracing = { version = "0.1", optional = true }
 tracing-subscriber = { version = "0.3", optional = true, features = ["env-filter"] }
-aws-config = { version = "1", optional = true, default-features = false, features = ["behavior-version-latest", "rt-tokio", "rustls"] }
-aws-sdk-dynamodb = { version = "1", optional = true, default-features = false, features = ["rt-tokio", "rustls"] }
+# `default-https-client` rather than the `rustls` feature: the latter selects the
+# SDK's legacy TLS stack, which pins rustls 0.21 and rustls-webpki 0.101 —
+# versions carrying four RUSTSEC advisories. `cargo audit` in CI caught this.
+aws-config = { version = "1", optional = true, default-features = false, features = ["behavior-version-latest", "rt-tokio", "default-https-client"] }
+aws-sdk-dynamodb = { version = "1", optional = true, default-features = false, features = ["rt-tokio", "default-https-client"] }
 
 [features]
 default = []
