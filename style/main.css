@@ -1,0 +1,389 @@
+/*
+ * Tinkhaven Typing
+ *
+ * The finger colours and the typing-state colours are Klavaro's own
+ * (src/keyboard.h and src/tutor.h), so someone who learned on the desktop
+ * program sees the same keyboard here. Note that the palette is mirror-
+ * symmetric except for the index fingers, which Klavaro deliberately gives
+ * different colours (yellow left, orange right) — those two do the most
+ * reaching, so telling them apart matters most.
+ *
+ * Dark values come from Klavaro's own altcolor.ini.
+ */
+
+:root {
+  /* Klavaro finger colours, left little finger to right little finger. */
+  --finger-1: #bbbbff; /* blue   */
+  --finger-2: #eeaaaa; /* red    */
+  --finger-3: #aaeebb; /* green  */
+  --finger-4: #eeee88; /* yellow */
+  --finger-5: #ccaacc; /* purple — the thumbs, the space bar */
+  --finger-6: #ffcc77; /* orange */
+  --finger-7: #aaeebb;
+  --finger-8: #eeaaaa;
+  --finger-9: #bbbbff;
+  --key-fg: #332200;
+  --key-blank: #afafaf;
+
+  /* Typing states. */
+  --char-untouched: #55524e;
+  --char-correct: #228822;
+  --char-wrong: #ff0044;
+  --char-wrong-bg: #eeddbb;
+  --char-retouched: #886600;
+  --cursor-fg: #ffffff;
+  --cursor-bg: #3377dd;
+
+  --bg: #faf8f6;
+  --panel: #ffffff;
+  --ink: #24211e;
+  --ink-soft: #6b645d;
+  --line: #e3ddd6;
+  --accent: #1f6feb;
+  --good: #1a7f37;
+  --bad: #b3261e;
+
+  --radius: 8px;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --finger-1: #4a4a86;
+    --finger-2: #7d4a4a;
+    --finger-3: #3f7a52;
+    --finger-4: #7a7433;
+    --finger-5: #6a4d6a;
+    --finger-6: #8a6329;
+    --finger-7: #3f7a52;
+    --finger-8: #7d4a4a;
+    --finger-9: #4a4a86;
+    --key-fg: #f2ece4;
+    --key-blank: #35322f;
+
+    --char-untouched: #8d867e;
+    --char-correct: #80ff80;
+    --char-wrong: #ff8a8a;
+    --char-wrong-bg: #5c1414;
+    --char-retouched: #ffcc99;
+    --cursor-fg: #101010;
+    --cursor-bg: #ffaa44;
+
+    --bg: #17161a;
+    --panel: #201f24;
+    --ink: #f2ece4;
+    --ink-soft: #a49c93;
+    --line: #322f36;
+    --accent: #79a8ff;
+    --good: #6fd88a;
+    --bad: #ff9a92;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+main {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 3rem;
+}
+
+a { color: var(--accent); }
+
+/* ---------- header ---------- */
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand { text-decoration: none; color: inherit; display: grid; }
+.brand-name { font-weight: 650; font-size: 1.1rem; letter-spacing: -0.01em; }
+.brand-tagline { color: var(--ink-soft); font-size: 0.85rem; }
+
+.pickers { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.pickers label { display: grid; gap: 0.15rem; font-size: 0.75rem; color: var(--ink-soft); }
+.pickers select {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.4rem;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  max-width: 14rem;
+}
+
+/* ---------- modules ---------- */
+
+.modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.module {
+  display: grid;
+  gap: 0.2rem;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  padding: 0.6rem 0.75rem;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.module:hover { border-color: var(--accent); }
+.module-current { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.module-name { font-weight: 600; font-size: 0.95rem; }
+.module-blurb { font-size: 0.75rem; color: var(--ink-soft); line-height: 1.35; }
+
+.lesson-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-bottom: 1rem;
+}
+.lesson-picker input[type="range"] { flex: 1; max-width: 24rem; }
+.lesson-picker output {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--ink);
+  min-width: 2ch;
+}
+
+/* ---------- the text ---------- */
+
+.surface {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  min-height: 9rem;
+}
+
+.surface:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.surface-prompt {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  margin: 0;
+  color: var(--ink-soft);
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border-radius: var(--radius);
+  pointer-events: none;
+  font-size: 0.9rem;
+}
+
+.text {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: clamp(0.95rem, 2.4vw, 1.25rem);
+  line-height: 1.9;
+  /* Keep the generated groups intact: a five-letter drill group should not be
+     split across lines, and a paragraph should still wrap normally. */
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.ch { color: var(--char-untouched); }
+.ch-correct { color: var(--char-correct); }
+.ch-wrong { color: var(--char-wrong); background: var(--char-wrong-bg); border-radius: 2px; }
+.ch-retouched { color: var(--char-retouched); }
+
+.ch-cursor {
+  color: var(--cursor-fg);
+  background: var(--cursor-bg);
+  border-radius: 2px;
+  animation: cursor-blink 1s steps(2, end) infinite;
+}
+
+@keyframes cursor-blink {
+  0%, 100% { background: var(--cursor-bg); }
+  50% { background: color-mix(in srgb, var(--cursor-bg) 45%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-cursor { animation: none; }
+}
+
+/* ---------- statistics ---------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.stat {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.7rem;
+}
+
+.stat dt { font-size: 0.7rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+.stat dd {
+  margin: 0.1rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.stat .unit { font-size: 0.7rem; font-weight: 400; color: var(--ink-soft); margin-left: 0.2rem; }
+
+/* ---------- keyboard ---------- */
+
+.keyboard {
+  display: grid;
+  gap: 0.25rem;
+  margin: 1.25rem 0;
+  /* The whole keyboard scales with the viewport; keys are sized in em so the
+     stagger offsets stay proportional. */
+  font-size: clamp(0.6rem, 1.6vw, 0.85rem);
+}
+
+.keyboard-row { display: flex; gap: 0.25rem; }
+.keyboard-row-space { justify-content: center; padding-left: 0 !important; }
+
+.key {
+  position: relative;
+  flex: 0 0 auto;
+  width: 2.4em;
+  height: 2.4em;
+  display: grid;
+  place-content: center;
+  border-radius: 4px;
+  background: var(--key-blank);
+  color: var(--key-fg);
+  font-family: var(--mono);
+  font-size: 1em;
+  border: 1px solid color-mix(in srgb, var(--key-fg) 18%, transparent);
+}
+
+.key-blank { background: transparent; border-color: transparent; }
+.key-shift { width: 3.6em; font-size: 0.7em; }
+.key-space { width: 16em; font-size: 0.7em; }
+
+.key-shifted {
+  position: absolute;
+  top: 0.15em;
+  right: 0.25em;
+  font-size: 0.6em;
+  opacity: 0.55;
+}
+
+.key-next {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  font-weight: 700;
+  transform: translateY(1px);
+}
+
+.finger-1 { background: var(--finger-1); }
+.finger-2 { background: var(--finger-2); }
+.finger-3 { background: var(--finger-3); }
+.finger-4 { background: var(--finger-4); }
+.finger-5 { background: var(--finger-5); }
+.finger-6 { background: var(--finger-6); }
+.finger-7 { background: var(--finger-7); }
+.finger-8 { background: var(--finger-8); }
+.finger-9 { background: var(--finger-9); }
+
+/* ---------- results, notices, board ---------- */
+
+.actions { display: flex; gap: 0.5rem; }
+
+.button {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.button:hover:not(:disabled) { border-color: var(--accent); }
+.button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.notice, .hint {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin: 0.5rem 0;
+}
+.notice-problem { color: var(--bad); }
+
+.results {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.results h2, .board h2 { margin: 0 0 0.5rem; font-size: 1rem; }
+
+.verdict { font-size: 0.95rem; }
+.verdict-met { color: var(--good); }
+.verdict-missed { color: var(--ink-soft); }
+.band { color: var(--ink-soft); font-style: italic; }
+
+.publish { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: end; }
+.publish label { display: grid; gap: 0.2rem; font-size: 0.75rem; color: var(--ink-soft); }
+.publish input {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.rank-preview { font-size: 1.5rem; font-weight: 700; margin: 0; }
+
+.board { margin-top: 1.5rem; }
+.board table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.board th, .board td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--line); }
+.board th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); }
+.board .number, .board .rank { font-variant-numeric: tabular-nums; text-align: right; }
+.board .date { color: var(--ink-soft); }
+
+/* ---------- prose pages ---------- */
+
+.prose { max-width: 42rem; }
+.prose h1 { font-size: 1.4rem; }
+.prose h2 { font-size: 1.05rem; margin-top: 1.75rem; }
+.prose .caveat { color: var(--ink-soft); font-size: 0.85rem; border-left: 2px solid var(--line); padding-left: 0.75rem; }
+
+.site-footer {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}

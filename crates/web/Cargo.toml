@@ -1,0 +1,71 @@
+[package]
+name = "typing-web"
+description = "Tinkhaven Typing — a web port of the Klavaro touch typing tutor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+typing-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+leptos = "0.8"
+leptos_meta = "0.8"
+leptos_router = "0.8"
+
+# --- client (wasm) ---
+console_error_panic_hook = { version = "0.1", optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+gloo-net = { version = "0.6", optional = true, default-features = false, features = ["http", "json"] }
+web-sys = { version = "0.3", optional = true, features = [
+  "KeyboardEvent", "Storage", "Window", "Document", "Element", "HtmlElement",
+  "Performance", "WebSocket", "MessageEvent", "CloseEvent", "BinaryType",
+  "Location", "Crypto", "EventTarget",
+] }
+
+# --- server ---
+axum = { version = "0.8", optional = true, features = ["ws", "macros"] }
+leptos_axum = { version = "0.8", optional = true }
+tokio = { version = "1", optional = true, features = ["rt-multi-thread", "macros", "signal", "time", "sync"] }
+tower = { version = "0.5", optional = true }
+futures-util = { version = "0.3", optional = true, default-features = false, features = ["sink"] }
+tower-http = { version = "0.6", optional = true, features = ["fs", "trace", "compression-gzip"] }
+tracing = { version = "0.1", optional = true }
+tracing-subscriber = { version = "0.3", optional = true, features = ["env-filter"] }
+aws-config = { version = "1", optional = true, default-features = false, features = ["behavior-version-latest", "rt-tokio", "rustls"] }
+aws-sdk-dynamodb = { version = "1", optional = true, default-features = false, features = ["rt-tokio", "rustls"] }
+
+[features]
+default = []
+hydrate = [
+  "leptos/hydrate",
+  "dep:console_error_panic_hook",
+  "dep:wasm-bindgen",
+  "dep:web-sys",
+  "dep:gloo-net",
+]
+ssr = [
+  "leptos/ssr",
+  "leptos_meta/ssr",
+  "leptos_router/ssr",
+  "dep:axum",
+  "dep:leptos_axum",
+  "dep:tokio",
+  "dep:tower",
+  "dep:futures-util",
+  "dep:tower-http",
+  "dep:tracing",
+  "dep:tracing-subscriber",
+  "dep:aws-config",
+  "dep:aws-sdk-dynamodb",
+]
+
+# Silence the cfg leptos uses for its own build detection.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(erase_components)'] }

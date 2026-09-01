@@ -1,0 +1,48 @@
+[workspace]
+members = ["crates/core", "crates/web"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/tinkhaven/typing"
+authors = ["Dieter Vekeman <dieter.vekeman@gmail.com>"]
+
+[workspace.dependencies]
+typing-core = { path = "crates/core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# The server binary: optimise for speed, and keep unwinding. With `panic = abort`
+# a panic in one WebSocket handler would take the whole container down instead of
+# just that connection.
+[profile.release]
+lto = "thin"
+
+# The WASM client: size is what the visitor waits for, so optimise for that.
+# `panic = abort` is right here — there is nothing to keep serving.
+[profile.wasm-release]
+inherits = "release"
+codegen-units = 1
+lto = true
+opt-level = "z"
+panic = "abort"
+
+# cargo-leptos drives both halves of the same package.
+[[workspace.metadata.leptos]]
+name = "typing"
+bin-package = "typing-web"
+lib-package = "typing-web"
+site-root = "target/site"
+site-pkg-dir = "pkg"
+style-file = "style/main.css"
+assets-dir = "crates/web/public"
+site-addr = "127.0.0.1:8080"
+reload-port = 3001
+browserquery = "defaults"
+bin-features = ["ssr"]
+bin-default-features = false
+lib-features = ["hydrate"]
+lib-default-features = false
+lib-profile-release = "wasm-release"

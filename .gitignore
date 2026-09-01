@@ -1,0 +1,17 @@
+/target
+/crates/*/target
+/dist
+/node_modules
+.DS_Store
+
+# Upstream tarball: we vendor the data files we use (assets/klavaro-data) and
+# document the exact upstream release in CREDITS.md, so the 1.2 MB archive and
+# its extracted tree stay out of git.
+/klavaro/
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example

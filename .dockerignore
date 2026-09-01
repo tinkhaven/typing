@@ -1,0 +1,7 @@
+target/
+klavaro/
+infra/
+.git/
+.DS_Store
+*.md
+tests/
