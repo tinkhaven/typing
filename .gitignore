@@ -30,7 +30,6 @@ secrets.toml
 # Credentials and keys
 *.pem
 *.key
-!**/assets/**/*.key
 *.p12
 *.pfx
 *.jks

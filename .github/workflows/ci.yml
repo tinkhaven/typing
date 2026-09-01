@@ -42,9 +42,14 @@ jobs:
           set -euo pipefail
           # Fetched from the upstream release rather than run as a third-party
           # action, so the pipeline stays free of Actions it does not control.
-          url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-          curl -fsSL "$url" -o gitleaks.tar.gz
-          tar -xzf gitleaks.tar.gz gitleaks
+          # A pinned version is only half of it: verify the checksum too, or a
+          # compromised release host substitutes a binary and this job runs it.
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL "$base/$archive" -o "$archive"
+          curl -fsSL "$base/gitleaks_${GITLEAKS_VERSION}_checksums.txt" -o checksums.txt
+          sha256sum --check --ignore-missing --strict checksums.txt
+          tar -xzf "$archive" gitleaks
           ./gitleaks git --redact --no-banner .
 
   rust:
@@ -148,6 +153,25 @@ jobs:
     needs: secrets
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Terraform
+        env:
+          TERRAFORM_VERSION: 1.15.8
+        run: |
+          set -euo pipefail
+          # Installed by hand rather than via setup-terraform, for the same
+          # reason as gitleaks above: fewer Actions in the supply chain. Pinned
+          # and checksum-verified.
+          base="https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}"
+          archive="terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+          curl -fsSL "$base/$archive" -o "$archive"
+          curl -fsSL "$base/terraform_${TERRAFORM_VERSION}_SHA256SUMS" -o sums.txt
+          sha256sum --check --ignore-missing --strict sums.txt
+          unzip -q "$archive" terraform
+          sudo install -m 0755 terraform /usr/local/bin/terraform
+          rm -f "$archive" sums.txt terraform
+          terraform version
+
       - name: Validate
         run: |
           set -euo pipefail
