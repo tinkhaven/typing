@@ -12,6 +12,214 @@
 use serde::{Deserialize, Serialize};
 use typing_core::goals::Module;
 
+/// Declares every interface string and its four translations in one place.
+///
+/// The point is that [`Msg::ALL`] is generated alongside the enum, so the
+/// exhaustiveness test below cannot fall behind: adding a message without
+/// translating it is a compile error, and adding one without listing it for the
+/// test is impossible. A hand-maintained list drifted twice before this existed.
+macro_rules! messages {
+    ($( $(#[doc = $doc:expr])* $variant:ident => ($en:expr, $nl:expr, $fr:expr, $de:expr) ),+ $(,)?) => {
+        /// Every translatable string in the interface.
+        #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+        pub enum Msg {
+            $( $(#[doc = $doc])* $variant, )+
+        }
+
+        impl Msg {
+            /// Every message, in declaration order.
+            pub const ALL: &'static [Msg] = &[ $( Msg::$variant, )+ ];
+
+            /// The four translations, in [`Locale::ALL`] order.
+            fn translations(self) -> (&'static str, &'static str, &'static str, &'static str) {
+                match self {
+                    $( Msg::$variant => ($en, $nl, $fr, $de), )+
+                }
+            }
+        }
+    };
+}
+
+messages! {
+    /// Tinkhaven Typing
+    AppName => (
+        "Tinkhaven Typing",
+        "Tinkhaven Typing",
+        "Tinkhaven Typing",
+        "Tinkhaven Typing"
+    ),
+    /// Learn to touch type
+    Tagline => (
+        "Learn to touch type",
+        "Leer blind typen",
+        "Apprenez la dactylographie",
+        "Lernen Sie das Zehnfingersystem"
+    ),
+    /// Basic course
+    ModuleBasic => ("Basic course", "Basiscursus", "Cours de base", "Grundkurs"),
+    /// Adaptability
+    ModuleAdaptability => (
+        "Adaptability",
+        "Flexibiliteit",
+        "Adaptabilité",
+        "Anpassbarkeit"
+    ),
+    /// Velocity
+    ModuleVelocity => ("Velocity", "Snelheid", "Vitesse", "Geschwindigkeit"),
+    /// Fluidness
+    ModuleFluidness => ("Fluidness", "Vloeiendheid", "Fluidité", "Schreibflüssigkeit"),
+    /// Meet the keys a few at a time, without looking down.
+    BlurbBasic => (
+        "Meet the keys a few at a time, without looking down.",
+        "Leer de toetsen een paar tegelijk, zonder te kijken.",
+        "Découvrez les touches quelques-unes à la fois, sans regarder.",
+        "Lernen Sie die Tasten Stück für Stück, ohne hinzusehen."
+    ),
+    /// Invented words that use the whole keyboard, so you cannot guess ahead.
+    BlurbAdaptability => (
+        "Invented words that use the whole keyboard, so you cannot guess ahead.",
+        "Verzonnen woorden over het hele toetsenbord, zodat je niet vooruit kunt gokken.",
+        "Des mots inventés sur tout le clavier, pour vous empêcher de devancer.",
+        "Erfundene Wörter über die ganze Tastatur, damit Sie nicht vorausraten."
+    ),
+    /// Real words, no punctuation. Push for speed.
+    BlurbVelocity => (
+        "Real words, no punctuation. Push for speed.",
+        "Echte woorden, geen interpunctie. Ga voor snelheid.",
+        "De vrais mots, sans ponctuation. Jouez la vitesse.",
+        "Echte Wörter, keine Zeichensetzung. Auf Geschwindigkeit."
+    ),
+    /// Real prose. Fix your mistakes and keep an even rhythm.
+    BlurbFluidness => (
+        "Real prose. Fix your mistakes and keep an even rhythm.",
+        "Echte tekst. Verbeter je fouten en houd een gelijkmatig ritme.",
+        "De la vraie prose. Corrigez vos fautes et gardez un rythme régulier.",
+        "Echte Texte. Korrigieren Sie Fehler und halten Sie den Rhythmus."
+    ),
+    /// Accuracy
+    Accuracy => ("Accuracy", "Nauwkeurigheid", "Précision", "Genauigkeit"),
+    /// Speed
+    Speed => ("Speed", "Snelheid", "Vitesse", "Geschwindigkeit"),
+    /// Fluidness
+    Fluidness => ("Fluidness", "Vloeiendheid", "Fluidité", "Schreibflüssigkeit"),
+    /// Errors
+    Errors => ("Errors", "Fouten", "Erreurs", "Fehler"),
+    /// Time
+    Time => ("Time", "Tijd", "Temps", "Zeit"),
+    /// Date
+    AchievedOn => ("Date", "Datum", "Date", "Datum"),
+    /// Keyboard
+    Keyboard => ("Keyboard", "Toetsenbord", "Clavier", "Tastatur"),
+    /// Practice text
+    PracticeLanguage => ("Practice text", "Oefentekst", "Texte d'exercice", "Übungstext"),
+    /// Interface
+    InterfaceLanguage => ("Interface", "Interface", "Interface", "Oberfläche"),
+    /// Lesson
+    Lesson => ("Lesson", "Les", "Leçon", "Lektion"),
+    /// Start typing to begin
+    StartTyping => (
+        "Start typing to begin",
+        "Begin te typen om te starten",
+        "Commencez à taper pour démarrer",
+        "Tippen Sie los, um zu beginnen"
+    ),
+    /// New exercise
+    NewExercise => ("New exercise", "Nieuwe oefening", "Nouvel exercice", "Neue Übung"),
+    /// Results
+    Results => ("Results", "Resultaten", "Résultats", "Ergebnisse"),
+    /// Goal reached — on to the next module.
+    GoalMet => (
+        "Goal reached — on to the next module.",
+        "Doel gehaald — door naar de volgende module.",
+        "Objectif atteint — au module suivant.",
+        "Ziel erreicht — weiter zum nächsten Modul."
+    ),
+    /// Not there yet. Try again.
+    GoalMissed => (
+        "Not there yet. Try again.",
+        "Nog niet. Probeer het opnieuw.",
+        "Pas encore. Réessayez.",
+        "Noch nicht. Versuchen Sie es erneut."
+    ),
+    /// Top 10
+    Leaderboard => ("Top 10", "Top 10", "Top 10", "Top 10"),
+    /// Nickname
+    Nickname => ("Nickname", "Bijnaam", "Pseudonyme", "Spitzname"),
+    /// Add to the board
+    Publish => (
+        "Add to the board",
+        "Op het bord zetten",
+        "Ajouter au classement",
+        "In die Tabelle eintragen"
+    ),
+    /// This run does not qualify for the board.
+    NotPublishable => (
+        "This run does not qualify for the board.",
+        "Deze poging komt niet in aanmerking voor het bord.",
+        "Cette tentative ne peut pas figurer au classement.",
+        "Dieser Versuch qualifiziert sich nicht für die Tabelle."
+    ),
+    /// The board takes finished Velocity and Fluidness runs that met the module's goals — Fluidness from 500 characters up.
+    PublishRules => (
+        "The board takes finished Velocity and Fluidness runs that met the module's goals — Fluidness from 500 characters up.",
+        "Het bord neemt afgeronde Snelheid- en Vloeiendheid-oefeningen op die de doelen haalden — Vloeiendheid vanaf 500 tekens.",
+        "Le classement retient les exercices Vitesse et Fluidité terminés ayant atteint les objectifs — Fluidité à partir de 500 caractères.",
+        "Die Tabelle nimmt abgeschlossene Geschwindigkeits- und Schreibflüssigkeitsübungen auf, die die Ziele erreichten — Schreibflüssigkeit ab 500 Zeichen."
+    ),
+    /// #
+    Rank => ("#", "#", "#", "#"),
+    /// Nobody here yet. Be the first.
+    BoardEmpty => (
+        "Nobody here yet. Be the first.",
+        "Nog niemand. Wees de eerste.",
+        "Personne encore. Soyez le premier.",
+        "Noch niemand. Seien Sie der Erste."
+    ),
+    /// Not connected — you can practise, but results cannot be published.
+    Offline => (
+        "Not connected — you can practise, but results cannot be published.",
+        "Niet verbonden — je kunt oefenen, maar resultaten kunnen niet worden gepubliceerd.",
+        "Non connecté — vous pouvez vous exercer, mais sans publier de résultat.",
+        "Nicht verbunden — Sie können üben, aber keine Ergebnisse veröffentlichen."
+    ),
+    /// About
+    About => ("About", "Over", "À propos", "Über"),
+    /// Next lesson
+    NextLesson => ("Next lesson", "Volgende les", "Leçon suivante", "Nächste Lektion"),
+    /// Previous lesson
+    PreviousLesson => (
+        "Previous lesson",
+        "Vorige les",
+        "Leçon précédente",
+        "Vorherige Lektion"
+    ),
+    /// Your best
+    PersonalBest => ("Your best", "Jouw beste", "Votre record", "Ihr Bestwert"),
+    /// A new personal best.
+    NewPersonalBest => (
+        "A new personal best.",
+        "Een nieuw persoonlijk record.",
+        "Un nouveau record personnel.",
+        "Ein neuer persönlicher Bestwert."
+    ),
+    /// Exercises done
+    Sessions => ("Exercises done", "Oefeningen gedaan", "Exercices faits", "Übungen"),
+    /// Forget my progress
+    ClearProgress => (
+        "Forget my progress",
+        "Vergeet mijn voortgang",
+        "Effacer ma progression",
+        "Fortschritt löschen"
+    ),
+    /// Backspace over mistakes and retype them.
+    CorrectionRequired => (
+        "Backspace over mistakes and retype them.",
+        "Gebruik backspace om fouten te verbeteren.",
+        "Corrigez les fautes avec la touche retour arrière.",
+        "Korrigieren Sie Fehler mit der Rücktaste."
+    ),
+}
+
 /// A language the interface is available in.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -113,272 +321,13 @@ impl Locale {
     }
 }
 
-/// Every translatable string in the interface.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum Msg {
-    /// The application's name.
-    AppName,
-    /// Tagline under the name.
-    Tagline,
-    /// Basic module name.
-    ModuleBasic,
-    /// Adaptability module name.
-    ModuleAdaptability,
-    /// Velocity module name.
-    ModuleVelocity,
-    /// Fluidness module name.
-    ModuleFluidness,
-    /// What Basic is for.
-    BlurbBasic,
-    /// What Adaptability is for.
-    BlurbAdaptability,
-    /// What Velocity is for.
-    BlurbVelocity,
-    /// What Fluidness is for.
-    BlurbFluidness,
-    /// Accuracy statistic label.
-    Accuracy,
-    /// Speed statistic label.
-    Speed,
-    /// Fluidness statistic label.
-    Fluidness,
-    /// Errors statistic label.
-    Errors,
-    /// Elapsed time label.
-    Time,
-    /// Board column heading for when a result was set.
-    AchievedOn,
-    /// Keyboard layout picker label.
-    Keyboard,
-    /// Practice language picker label.
-    PracticeLanguage,
-    /// Interface language picker label.
-    InterfaceLanguage,
-    /// Lesson picker label.
-    Lesson,
-    /// Prompt to begin typing.
-    StartTyping,
-    /// Button that fetches a new exercise.
-    NewExercise,
-    /// Heading of the results panel.
-    Results,
-    /// Told the goals were met.
-    GoalMet,
-    /// Told the goals were not met.
-    GoalMissed,
-    /// Leaderboard heading.
-    Leaderboard,
-    /// Nickname field label.
-    Nickname,
-    /// Button that publishes a result.
-    Publish,
-    /// Told the result is not eligible for the board.
-    NotPublishable,
-    /// Explains what makes a result eligible.
-    PublishRules,
-    /// Column heading for board position.
-    Rank,
-    /// Shown when a board has no entries.
-    BoardEmpty,
-    /// Working offline, results cannot be published.
-    Offline,
-    /// Link to the credits page.
-    About,
-    /// Correction is required in this module.
-    CorrectionRequired,
-}
-
-impl Msg {
-    /// The four translations, in `Locale::ALL` order.
-    ///
-    /// Strings marked *(Klavaro)* come from the upstream catalogues.
-    fn translations(self) -> (&'static str, &'static str, &'static str, &'static str) {
-        match self {
-            Msg::AppName => (
-                "Tinkhaven Typing",
-                "Tinkhaven Typing",
-                "Tinkhaven Typing",
-                "Tinkhaven Typing",
-            ),
-            Msg::Tagline => (
-                "Learn to touch type",
-                "Leer blind typen",
-                "Apprenez la dactylographie",
-                "Lernen Sie das Zehnfingersystem",
-            ),
-            // Module names: Klavaro catalogues.
-            Msg::ModuleBasic => ("Basic course", "Basiscursus", "Cours de base", "Grundkurs"),
-            Msg::ModuleAdaptability => (
-                "Adaptability",
-                "Flexibiliteit",
-                "Adaptabilité",
-                "Anpassbarkeit",
-            ),
-            Msg::ModuleVelocity => ("Velocity", "Snelheid", "Vitesse", "Geschwindigkeit"),
-            Msg::ModuleFluidness => (
-                "Fluidness",
-                "Vloeiendheid",
-                "Fluidité",
-                "Schreibflüssigkeit",
-            ),
-            Msg::BlurbBasic => (
-                "Meet the keys a few at a time, without looking down.",
-                "Leer de toetsen een paar tegelijk, zonder te kijken.",
-                "Découvrez les touches quelques-unes à la fois, sans regarder.",
-                "Lernen Sie die Tasten Stück für Stück, ohne hinzusehen.",
-            ),
-            Msg::BlurbAdaptability => (
-                "Invented words that use the whole keyboard, so you cannot guess ahead.",
-                "Verzonnen woorden over het hele toetsenbord, zodat je niet vooruit kunt gokken.",
-                "Des mots inventés sur tout le clavier, pour vous empêcher de devancer.",
-                "Erfundene Wörter über die ganze Tastatur, damit Sie nicht vorausraten.",
-            ),
-            Msg::BlurbVelocity => (
-                "Real words, no punctuation. Push for speed.",
-                "Echte woorden, geen interpunctie. Ga voor snelheid.",
-                "De vrais mots, sans ponctuation. Jouez la vitesse.",
-                "Echte Wörter, keine Zeichensetzung. Auf Geschwindigkeit.",
-            ),
-            Msg::BlurbFluidness => (
-                "Real prose. Fix your mistakes and keep an even rhythm.",
-                "Echte tekst. Verbeter je fouten en houd een gelijkmatig ritme.",
-                "De la vraie prose. Corrigez vos fautes et gardez un rythme régulier.",
-                "Echte Texte. Korrigieren Sie Fehler und halten Sie den Rhythmus.",
-            ),
-            // Statistic labels: Klavaro catalogues.
-            Msg::Accuracy => ("Accuracy", "Nauwkeurigheid", "Précision", "Genauigkeit"),
-            Msg::Speed => ("Speed", "Snelheid", "Vitesse", "Geschwindigkeit"),
-            Msg::Fluidness => (
-                "Fluidness",
-                "Vloeiendheid",
-                "Fluidité",
-                "Schreibflüssigkeit",
-            ),
-            Msg::Errors => ("Errors", "Fouten", "Erreurs", "Fehler"),
-            Msg::Time => ("Time", "Tijd", "Temps", "Zeit"),
-            Msg::AchievedOn => ("Date", "Datum", "Date", "Datum"),
-            Msg::Keyboard => ("Keyboard", "Toetsenbord", "Clavier", "Tastatur"),
-            Msg::PracticeLanguage => (
-                "Practice text",
-                "Oefentekst",
-                "Texte d'exercice",
-                "Übungstext",
-            ),
-            Msg::InterfaceLanguage => ("Interface", "Interface", "Interface", "Oberfläche"),
-            Msg::Lesson => ("Lesson", "Les", "Leçon", "Lektion"),
-            Msg::StartTyping => (
-                "Start typing to begin",
-                "Begin te typen om te starten",
-                "Commencez à taper pour démarrer",
-                "Tippen Sie los, um zu beginnen",
-            ),
-            Msg::NewExercise => (
-                "New exercise",
-                "Nieuwe oefening",
-                "Nouvel exercice",
-                "Neue Übung",
-            ),
-            Msg::Results => ("Results", "Resultaten", "Résultats", "Ergebnisse"),
-            Msg::GoalMet => (
-                "Goal reached — on to the next module.",
-                "Doel gehaald — door naar de volgende module.",
-                "Objectif atteint — au module suivant.",
-                "Ziel erreicht — weiter zum nächsten Modul.",
-            ),
-            Msg::GoalMissed => (
-                "Not there yet. Try again.",
-                "Nog niet. Probeer het opnieuw.",
-                "Pas encore. Réessayez.",
-                "Noch nicht. Versuchen Sie es erneut.",
-            ),
-            Msg::Leaderboard => ("Top 10", "Top 10", "Top 10", "Top 10"),
-            Msg::Nickname => ("Nickname", "Bijnaam", "Pseudonyme", "Spitzname"),
-            Msg::Publish => (
-                "Add to the board",
-                "Op het bord zetten",
-                "Ajouter au classement",
-                "In die Tabelle eintragen",
-            ),
-            Msg::NotPublishable => (
-                "This run does not qualify for the board.",
-                "Deze poging komt niet in aanmerking voor het bord.",
-                "Cette tentative ne peut pas figurer au classement.",
-                "Dieser Versuch qualifiziert sich nicht für die Tabelle.",
-            ),
-            Msg::PublishRules => (
-                "The board takes finished Velocity and Fluidness runs that met the module's goals — Fluidness from 500 characters up.",
-                "Het bord neemt afgeronde Snelheid- en Vloeiendheid-oefeningen op die de doelen haalden — Vloeiendheid vanaf 500 tekens.",
-                "Le classement retient les exercices Vitesse et Fluidité terminés ayant atteint les objectifs — Fluidité à partir de 500 caractères.",
-                "Die Tabelle nimmt abgeschlossene Geschwindigkeits- und Schreibflüssigkeitsübungen auf, die die Ziele erreichten — Schreibflüssigkeit ab 500 Zeichen.",
-            ),
-            Msg::Rank => ("#", "#", "#", "#"),
-            Msg::BoardEmpty => (
-                "Nobody here yet. Be the first.",
-                "Nog niemand. Wees de eerste.",
-                "Personne encore. Soyez le premier.",
-                "Noch niemand. Seien Sie der Erste.",
-            ),
-            Msg::Offline => (
-                "Not connected — you can practise, but results cannot be published.",
-                "Niet verbonden — je kunt oefenen, maar resultaten kunnen niet worden gepubliceerd.",
-                "Non connecté — vous pouvez vous exercer, mais sans publier de résultat.",
-                "Nicht verbunden — Sie können üben, aber keine Ergebnisse veröffentlichen.",
-            ),
-            Msg::About => ("About", "Over", "À propos", "Über"),
-            Msg::CorrectionRequired => (
-                "Backspace over mistakes and retype them.",
-                "Gebruik backspace om fouten te verbeteren.",
-                "Corrigez les fautes avec la touche retour arrière.",
-                "Korrigieren Sie Fehler mit der Rücktaste.",
-            ),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// Every message in the interface, for exhaustiveness checks.
-    const EVERY_MSG: [Msg; 33] = [
-        Msg::AppName,
-        Msg::Tagline,
-        Msg::ModuleBasic,
-        Msg::ModuleAdaptability,
-        Msg::ModuleVelocity,
-        Msg::ModuleFluidness,
-        Msg::BlurbBasic,
-        Msg::BlurbAdaptability,
-        Msg::BlurbVelocity,
-        Msg::BlurbFluidness,
-        Msg::Accuracy,
-        Msg::Speed,
-        Msg::Fluidness,
-        Msg::Errors,
-        Msg::Time,
-        Msg::AchievedOn,
-        Msg::Keyboard,
-        Msg::PracticeLanguage,
-        Msg::InterfaceLanguage,
-        Msg::Lesson,
-        Msg::StartTyping,
-        Msg::NewExercise,
-        Msg::Results,
-        Msg::GoalMet,
-        Msg::GoalMissed,
-        Msg::Leaderboard,
-        Msg::Nickname,
-        Msg::Publish,
-        Msg::NotPublishable,
-        Msg::PublishRules,
-        Msg::Rank,
-        Msg::BoardEmpty,
-        Msg::Offline,
-    ];
-
     #[test]
     fn no_translation_is_missing() {
-        for msg in EVERY_MSG {
+        for &msg in Msg::ALL {
             for locale in Locale::ALL {
                 let text = locale.text(msg);
                 assert!(
@@ -388,6 +337,15 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn the_generated_list_covers_every_message() {
+        // Guards the macro itself: ALL is built from the same invocation as the
+        // enum, so a message cannot exist without appearing here.
+        let unique: std::collections::HashSet<_> = Msg::ALL.iter().collect();
+        assert_eq!(unique.len(), Msg::ALL.len(), "a message is listed twice");
+        assert!(Msg::ALL.len() >= 39, "only {} messages?", Msg::ALL.len());
     }
 
     #[test]

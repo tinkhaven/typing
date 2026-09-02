@@ -23,7 +23,7 @@ use crate::{
     i18n::Msg,
     keyboard::VirtualKeyboard,
     protocol::{BoardEntry, ClientMessage, ServerMessage, Touch, TouchKind, TOUCH_BATCH_SIZE},
-    settings::Settings,
+    settings::{ProgressStore, Settings, LAST_LESSON},
     socket::{self, Status},
 };
 
@@ -42,6 +42,7 @@ enum Phase {
 #[component]
 pub fn Practice() -> impl IntoView {
     let settings = expect_context::<Settings>();
+    let progress = expect_context::<ProgressStore>();
     let lessons = StoredValue::new(klavaro_lessons());
 
     // --- exercise and run state ------------------------------------------
@@ -60,6 +61,7 @@ pub fn Practice() -> impl IntoView {
     let publishable = RwSignal::new(false);
     let would_rank = RwSignal::new(None::<u32>);
     let published = RwSignal::new(false);
+    let personal_best = RwSignal::new(false);
     let nickname = RwSignal::new(String::new());
     let server_following = RwSignal::new(false);
 
@@ -82,6 +84,7 @@ pub fn Practice() -> impl IntoView {
     // ---------------------------------------------------------------------
     Effect::new(move |_| {
         settings.restore();
+        progress.restore();
         socket::connect(
             move |message| match message {
                 ServerMessage::Following { expected_chars } => {
@@ -273,6 +276,16 @@ pub fn Practice() -> impl IntoView {
             flush(outbox);
             phase.set(Phase::Done);
             let local = typist.read_untracked().as_ref().map(|t| t.score());
+            // Progress is recorded from the local score and kept in this
+            // browser, so it works with or without a connection.
+            if let Some(score) = local.as_ref() {
+                let improved = progress.record(
+                    settings.module.get_untracked(),
+                    score,
+                    settings.lesson.get_untracked(),
+                );
+                personal_best.set(improved);
+            }
             // Show the local score at once; the server's replaces it when its
             // reply arrives, and that is the one the board uses.
             score.set(local);
@@ -347,6 +360,7 @@ pub fn Practice() -> impl IntoView {
                                 would_rank=would_rank
                                 published=published
                                 nickname=nickname
+                                personal_best=personal_best
                             />
                         }
                     })
@@ -523,8 +537,10 @@ fn Results(
     would_rank: RwSignal<Option<u32>>,
     published: RwSignal<bool>,
     nickname: RwSignal<String>,
+    personal_best: RwSignal<bool>,
 ) -> impl IntoView {
     let settings = expect_context::<Settings>();
+    let progress = expect_context::<ProgressStore>();
     let locale = move || settings.locale.get();
     let goals_met = Memo::new(move |_| {
         score
@@ -594,6 +610,52 @@ fn Results(
             </p>
 
             {move || {
+                personal_best
+                    .get()
+                    .then(|| {
+                        view! {
+                            <p class="verdict verdict-met">
+                                {move || locale().text(Msg::NewPersonalBest)}
+                            </p>
+                        }
+                    })
+            }}
+            {move || {
+                let module = settings.module.get();
+                progress
+                    .data
+                    .read()
+                    .best_for(module)
+                    .map(|best| {
+                        view! {
+                            <p class="notice">
+                                {move || locale().text(Msg::PersonalBest)}": "
+                                <strong>{format!("{:.1}", best.speed)}</strong>
+                                " wpm at "{format!("{:.1}%", best.accuracy)}
+                            </p>
+                        }
+                    })
+            }}
+
+            {move || {
+                // Cleared a Basic lesson: offer the obvious next step rather
+                // than making the visitor go back to the slider.
+                let lesson = settings.lesson.get();
+                let more_lessons = lesson.lt(&LAST_LESSON);
+                (settings.module.get() == Module::Basic && goals_met.get() && more_lessons)
+                    .then(|| {
+                        view! {
+                            <button
+                                class="button button-primary"
+                                on:click=move |_| settings.lesson.set(lesson + 1)
+                            >
+                                {move || locale().text(Msg::NextLesson)}" \u{2192}"
+                            </button>
+                        }
+                    })
+            }}
+
+            {move || {
                 if published.get() {
                     view! { <p class="notice">{move || locale().text(Msg::Leaderboard)}</p> }
                         .into_any()
@@ -643,7 +705,16 @@ fn Results(
 #[component]
 fn ModulePicker() -> impl IntoView {
     let settings = expect_context::<Settings>();
+    let progress = expect_context::<ProgressStore>();
     let locale = move || settings.locale.get();
+
+    // Hoisted out of the markup on purpose. The `view!` macro scans for `>` to
+    // find the end of a tag, so a `>=` inside an attribute expression closes the
+    // tag early and the rest of the Rust silently becomes text content — which
+    // is exactly what happened here before these were memos.
+    let at_first_lesson = Memo::new(move |_| settings.lesson.get() <= 1);
+    let at_last_lesson = Memo::new(move |_| settings.lesson.get() >= LAST_LESSON);
+    let lessons_cleared = Memo::new(move |_| progress.data.read().lesson_reached);
 
     view! {
         <nav class="modules" aria-label="Practice modules">
@@ -677,21 +748,57 @@ fn ModulePicker() -> impl IntoView {
             (settings.module.get() == Module::Basic)
                 .then(|| {
                     view! {
-                        <label class="lesson-picker">
-                            {move || locale().text(Msg::Lesson)}
+                        <div class="lesson-picker">
+                            <label for="lesson-slider">
+                                {move || locale().text(Msg::Lesson)}
+                            </label>
+                            <button
+                                class="button button-step"
+                                title=move || locale().text(Msg::PreviousLesson)
+                                aria-label=move || locale().text(Msg::PreviousLesson)
+                                disabled=at_first_lesson
+                                on:click=move |_| {
+                                    settings.lesson.update(|n| *n = n.saturating_sub(1).max(1))
+                                }
+                            >
+                                "\u{2039}"
+                            </button>
                             <input
+                                id="lesson-slider"
                                 type="range"
                                 min="1"
-                                max="43"
+                                max=LAST_LESSON.to_string()
                                 prop:value=move || settings.lesson.get().to_string()
                                 on:input=move |ev| {
                                     if let Ok(n) = event_target_value(&ev).parse::<u32>() {
-                                        settings.lesson.set(n);
+                                        settings.lesson.set(n.clamp(1, LAST_LESSON));
                                     }
                                 }
                             />
                             <output>{move || settings.lesson.get()}</output>
-                        </label>
+                            <button
+                                class="button button-step"
+                                title=move || locale().text(Msg::NextLesson)
+                                aria-label=move || locale().text(Msg::NextLesson)
+                                disabled=at_last_lesson
+                                on:click=move |_| {
+                                    settings.lesson.update(|n| *n = (*n + 1).min(LAST_LESSON))
+                                }
+                            >
+                                "\u{203a}"
+                            </button>
+                            {move || {
+                                let reached = lessons_cleared.get();
+                                (reached != 0)
+                                    .then(|| {
+                                        view! {
+                                            <span class="lesson-reached">
+                                                "cleared up to "{reached}
+                                            </span>
+                                        }
+                                    })
+                            }}
+                        </div>
                     }
                 })
         }}

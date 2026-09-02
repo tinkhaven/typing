@@ -116,3 +116,7 @@ wasm client alongside the server.
   stripped upstream. The parser pads; it must not reject them.
 - Klavaro's lessons are grouped by keyboard region, not cumulative. Lesson 43 is
   symbols, not "everything".
+- **Never put `>` or `>=` in a `view!` attribute expression.** The macro scans
+  for `>` to find the end of the tag, so `disabled=move || n >= MAX` closes the
+  `<button>` early and the rest of your Rust becomes visible text on the page —
+  no warning, no error. Hoist the comparison into a `Memo` and pass that.

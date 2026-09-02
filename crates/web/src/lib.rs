@@ -36,7 +36,7 @@ use crate::{
     about::About,
     i18n::{Locale, Msg},
     practice::Practice,
-    settings::Settings,
+    settings::{ProgressStore, Settings},
 };
 
 /// The HTML document that wraps the application.
@@ -68,6 +68,7 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
     let settings = Settings::default();
     provide_context(settings);
+    provide_context(ProgressStore::default());
 
     view! {
         <Stylesheet id="leptos" href="/pkg/typing.css" />

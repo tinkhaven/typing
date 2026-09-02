@@ -166,12 +166,36 @@ a { color: var(--accent); }
   color: var(--ink-soft);
   margin-bottom: 1rem;
 }
-.lesson-picker input[type="range"] { flex: 1; max-width: 24rem; }
+.lesson-picker input[type="range"] { flex: 1; max-width: 20rem; min-width: 6rem; }
 .lesson-picker output {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--ink);
   min-width: 2ch;
+  text-align: right;
+}
+.lesson-reached { font-size: 0.75rem; color: var(--ink-soft); }
+
+/* Square steppers either side of the slider. Sized in ch so they stay square
+   whatever the chevron glyph's own advance width turns out to be. */
+.button-step {
+  padding: 0;
+  width: 2ch;
+  min-width: 1.9rem;
+  height: 1.9rem;
+  line-height: 1;
+  font-size: 1.1rem;
+  display: grid;
+  place-content: center;
+}
+
+.button-primary {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.button-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 /* ---------- the text ---------- */
@@ -287,8 +311,15 @@ a { color: var(--accent); }
 }
 
 .key-blank { background: transparent; border-color: transparent; }
-.key-shift { width: 3.6em; font-size: 0.7em; }
-.key-space { width: 16em; font-size: 0.7em; }
+
+/* Widths stay in the parent's em, and only the label shrinks.
+   Setting font-size on the key itself would rescale its own width with it —
+   `width: 3.6em; font-size: 0.7em` is really 2.5em, which is why Shift used to
+   come out barely wider than a letter key. */
+.key-shift { width: 3em; }
+.key-space { width: 14em; }
+.key-shift .key-label,
+.key-space .key-label { font-size: 0.65em; letter-spacing: 0.02em; }
 
 .key-shifted {
   position: absolute;
@@ -353,6 +384,7 @@ a { color: var(--accent); }
 .verdict-missed { color: var(--ink-soft); }
 .band { color: var(--ink-soft); font-style: italic; }
 
+.results > * + * { margin-top: 0.6rem; }
 .publish { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: end; }
 .publish label { display: grid; gap: 0.2rem; font-size: 0.75rem; color: var(--ink-soft); }
 .publish input {

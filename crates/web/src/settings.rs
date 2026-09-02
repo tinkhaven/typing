@@ -6,13 +6,25 @@
 //! personal data beyond a nickname the visitor types when they choose to publish
 //! a score.
 
+use std::collections::BTreeMap;
+
 use leptos::prelude::*;
-use typing_core::{goals::Module, DEFAULT_LAYOUT};
+use serde::{Deserialize, Serialize};
+use typing_core::{goals::Module, stats::Score, DEFAULT_LAYOUT};
 
 use crate::i18n::Locale;
 
 /// Key that preferences are stored under.
 const STORAGE_KEY: &str = "tinkhaven-typing";
+
+/// Key that progress is stored under.
+///
+/// Separate from preferences so that a change to either cannot corrupt the
+/// other, and so clearing one is possible without losing the other.
+const PROGRESS_KEY: &str = "tinkhaven-typing-progress";
+
+/// Highest Basic lesson.
+pub const LAST_LESSON: u32 = 43;
 
 /// The choices that drive an exercise.
 #[derive(Clone, Copy)]
@@ -82,7 +94,7 @@ impl Settings {
         if let Some(language) = saved.language.filter(|l| !l.is_empty()) {
             self.corpus_language.set(language);
         }
-        if let Some(lesson) = saved.lesson.filter(|n| (1..=43).contains(n)) {
+        if let Some(lesson) = saved.lesson.filter(|n| (1..=LAST_LESSON).contains(n)) {
             self.lesson.set(lesson);
         }
     }
@@ -135,3 +147,200 @@ fn read_storage(_key: &str) -> Option<String> {
 
 #[cfg(not(feature = "hydrate"))]
 fn write_storage(_key: &str, _value: &str) {}
+
+// ---------------------------------------------------------------------------
+// Progress
+// ---------------------------------------------------------------------------
+
+/// The best a visitor has managed in one module.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct Best {
+    /// Words per minute.
+    pub speed: f64,
+    /// Accuracy percentage.
+    pub accuracy: f64,
+    /// Fluidness percentage, where the module measures it.
+    pub fluidness: Option<f64>,
+}
+
+/// What the visitor has achieved, kept in their own browser.
+///
+/// There is no account to hang this on, and for a typing tutor there does not
+/// need to be: the point of tracking progress is to see your own numbers move.
+/// Keeping it in `localStorage` means no server-side personal data at all. The
+/// cost is that it does not follow you between devices.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct Progress {
+    /// Best run per module, keyed by [`Module::slug`].
+    #[serde(default)]
+    pub best: BTreeMap<String, Best>,
+    /// Highest Basic lesson whose goals have been met.
+    #[serde(default)]
+    pub lesson_reached: u32,
+    /// How many exercises have been finished.
+    #[serde(default)]
+    pub sessions: u32,
+}
+
+impl Progress {
+    /// The best run recorded for a module.
+    pub fn best_for(&self, module: Module) -> Option<Best> {
+        self.best.get(module.slug()).copied()
+    }
+
+    /// Folds a finished run in, returning whether it set a personal best.
+    ///
+    /// "Best" is decided on speed, but only among runs that met the module's
+    /// goals — otherwise the record would go to whoever typed fastest while
+    /// ignoring accuracy, which is the opposite of the point.
+    pub fn record(&mut self, module: Module, score: &Score, lesson: u32) -> bool {
+        self.sessions = self.sessions.saturating_add(1);
+
+        let goals_met = module.goals().met_by(score);
+        if goals_met && module == Module::Basic {
+            self.lesson_reached = self.lesson_reached.max(lesson);
+        }
+        if !goals_met {
+            return false;
+        }
+
+        let entry = self.best.entry(module.slug().to_owned()).or_default();
+        if score.speed > entry.speed {
+            *entry = Best {
+                speed: score.speed,
+                accuracy: score.accuracy,
+                fluidness: score.fluidness,
+            };
+            return true;
+        }
+        false
+    }
+}
+
+/// Reactive access to [`Progress`], persisted on every change.
+#[derive(Clone, Copy)]
+pub struct ProgressStore {
+    /// The current progress.
+    pub data: RwSignal<Progress>,
+}
+
+impl Default for ProgressStore {
+    fn default() -> Self {
+        ProgressStore {
+            data: RwSignal::new(Progress::default()),
+        }
+    }
+}
+
+impl ProgressStore {
+    /// Loads saved progress, ignoring anything unreadable.
+    pub fn restore(&self) {
+        let Some(raw) = read_storage(PROGRESS_KEY) else {
+            return;
+        };
+        if let Ok(saved) = serde_json::from_str::<Progress>(&raw) {
+            self.data.set(saved);
+        }
+    }
+
+    /// Records a finished run and saves. Returns whether it was a personal best.
+    pub fn record(&self, module: Module, score: &Score, lesson: u32) -> bool {
+        let improved = self
+            .data
+            .try_update(|progress| progress.record(module, score, lesson))
+            .unwrap_or(false);
+        self.persist();
+        improved
+    }
+
+    /// Writes progress to storage. Failures are ignored on purpose.
+    pub fn persist(&self) {
+        if let Ok(json) = serde_json::to_string(&self.data.get_untracked()) {
+            write_storage(PROGRESS_KEY, &json);
+        }
+    }
+
+    /// Forgets everything. Offered because it is the visitor's own data.
+    pub fn clear(&self) {
+        self.data.set(Progress::default());
+        write_storage(PROGRESS_KEY, "");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn score(accuracy: f64, speed: f64, fluidness: Option<f64>) -> Score {
+        Score {
+            accuracy,
+            speed,
+            fluidness,
+            touches: 600,
+            errors: 0,
+            seconds: 60.0,
+        }
+    }
+
+    #[test]
+    fn a_qualifying_run_sets_a_best() {
+        let mut p = Progress::default();
+        // Velocity needs 95% accuracy and 50 wpm.
+        assert!(p.record(Module::Velocity, &score(96.0, 55.0, None), 1));
+        assert_eq!(p.best_for(Module::Velocity).unwrap().speed, 55.0);
+        assert_eq!(p.sessions, 1);
+    }
+
+    #[test]
+    fn a_faster_run_that_misses_the_goals_does_not_take_the_record() {
+        let mut p = Progress::default();
+        p.record(Module::Velocity, &score(96.0, 55.0, None), 1);
+        // Much faster, but sloppy: the goal is accuracy first.
+        assert!(!p.record(Module::Velocity, &score(80.0, 90.0, None), 1));
+        assert_eq!(p.best_for(Module::Velocity).unwrap().speed, 55.0);
+        assert_eq!(p.sessions, 2, "it still counts as a session");
+    }
+
+    #[test]
+    fn a_slower_qualifying_run_does_not_lower_the_best() {
+        let mut p = Progress::default();
+        p.record(Module::Velocity, &score(96.0, 70.0, None), 1);
+        assert!(!p.record(Module::Velocity, &score(99.0, 60.0, None), 1));
+        assert_eq!(p.best_for(Module::Velocity).unwrap().speed, 70.0);
+    }
+
+    #[test]
+    fn modules_keep_separate_records() {
+        let mut p = Progress::default();
+        p.record(Module::Velocity, &score(96.0, 55.0, None), 1);
+        p.record(Module::Fluidness, &score(98.0, 55.0, Some(80.0)), 1);
+        assert!(p.best_for(Module::Velocity).is_some());
+        assert!(p.best_for(Module::Fluidness).is_some());
+        assert!(p.best_for(Module::Adaptability).is_none());
+    }
+
+    #[test]
+    fn clearing_a_basic_lesson_advances_the_high_water_mark() {
+        let mut p = Progress::default();
+        // Basic needs 95% accuracy and 10 wpm.
+        p.record(Module::Basic, &score(97.0, 20.0, None), 7);
+        assert_eq!(p.lesson_reached, 7);
+        // Going back to an earlier lesson must not lower it.
+        p.record(Module::Basic, &score(97.0, 20.0, None), 3);
+        assert_eq!(p.lesson_reached, 7);
+        // Failing a later one does not advance it.
+        p.record(Module::Basic, &score(50.0, 20.0, None), 9);
+        assert_eq!(p.lesson_reached, 7);
+    }
+
+    #[test]
+    fn older_saved_progress_still_loads() {
+        // Fields are all #[serde(default)], so a save from a version that did
+        // not have them yet must not be thrown away.
+        let progress: Progress = serde_json::from_str("{}").expect("loads");
+        assert_eq!(progress, Progress::default());
+        let partial: Progress = serde_json::from_str(r#"{"lesson_reached":5}"#).expect("loads");
+        assert_eq!(partial.lesson_reached, 5);
+        assert_eq!(partial.sessions, 0);
+    }
+}
