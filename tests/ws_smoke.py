@@ -1,8 +1,10 @@
 """End-to-end check of the practice socket: honest run, publish, and rejection."""
-import asyncio, json, sys
+import asyncio, json, os, sys
 import websockets
 
-URL = "ws://127.0.0.1:8080/api/ws"
+# Defaults to a local server; point it anywhere with TYPING_WS_URL, e.g.
+#   TYPING_WS_URL=wss://typing.example.com/api/ws python3 tests/ws_smoke.py
+URL = os.environ.get("TYPING_WS_URL", "ws://127.0.0.1:8080/api/ws")
 ok, fail = [], []
 
 def check(name, cond, detail=""):
@@ -62,6 +64,7 @@ async def honest_run(module, language, target_wpm=200, nickname="Tester"):
         return chars, (scored, board)
 
 async def main():
+    print(f"target: {URL}\n")
     print("1. Velocity: honest run at ~200 wpm, then publish")
     chars, result = await honest_run("velocity", "en_GB", nickname="Dieter")
     check("velocity exercise reproduced by the server", chars and chars > 300, f"{chars} chars")

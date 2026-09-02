@@ -55,14 +55,17 @@ if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; th
   VERSION="${VERSION}-dirty"
 fi
 
+# Braces are load-bearing here. This script runs under bash, but in zsh
+# "$REGISTRY:latest" parses ":l" as the lowercase modifier and silently builds
+# a tag called "…/typingatest:latest" instead — which then never gets pulled.
 say "Building $PLATFORM image ($VERSION)"
-docker build --platform "$PLATFORM" -t "$REGISTRY:latest" -t "$REGISTRY:$VERSION" .
+docker build --platform "$PLATFORM" -t "${REGISTRY}:latest" -t "${REGISTRY}:${VERSION}" .
 
 say "Pushing to ECR"
 aws ecr get-login-password --region "$REGION" \
   | docker login --username AWS --password-stdin "${REGISTRY%%/*}"
-docker push "$REGISTRY:latest"
-docker push "$REGISTRY:$VERSION"
+docker push "${REGISTRY}:latest"
+docker push "${REGISTRY}:${VERSION}"
 
 say "Rolling the service"
 aws ecs update-service \

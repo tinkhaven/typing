@@ -78,7 +78,7 @@ RULESET
 # --------------------------------------------------------------------------
 # Filenames that must never be tracked, whatever they contain.
 # --------------------------------------------------------------------------
-FORBIDDEN_PATHS='(^|/)\.env($|\.)|(^|/)\.envrc$|\.pem$|\.p12$|\.pfx$|\.jks$|\.keystore$|(^|/)id_(rsa|dsa|ecdsa|ed25519)$|(^|/)\.netrc$|(^|/)\.npmrc$|(^|/)\.pypirc$|(^|/)credentials$|(^|/)\.aws/|\.tfstate($|\.)|\.tfvars$|(^|/)kubeconfig$|(^|/)\.ssh/|\.kdbx$|(^|/)secrets?\.(ya?ml|json|toml)$'
+FORBIDDEN_PATHS='(^|/)\.env($|\.)|(^|/)\.envrc$|\.pem$|\.p12$|\.pfx$|\.jks$|\.keystore$|(^|/)id_(rsa|dsa|ecdsa|ed25519)$|(^|/)\.netrc$|(^|/)\.npmrc$|(^|/)\.pypirc$|(^|/)credentials$|(^|/)\.aws/|\.tfstate($|\.)|\.tfvars$|(^|/)tfplan($|\.)|\.tfplan($|\.)|(^|/)kubeconfig$|(^|/)\.ssh/|\.kdbx$|(^|/)secrets?\.(ya?ml|json|toml)$'
 
 # The only path exempt from content rules: this script, whose rule list
 # necessarily contains the very key headers it looks for. Filename rules still

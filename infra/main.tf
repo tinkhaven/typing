@@ -38,10 +38,21 @@ data "aws_vpc" "default" {
   default = true
 }
 
+# One subnet per availability zone, and exactly one.
+#
+# A load balancer refuses to attach to two subnets in the same AZ, and a default
+# VPC can easily have more than one there — an extra subnet added by hand at some
+# point is enough. `default-for-az` is the subnet AWS created with the VPC, so
+# this yields precisely one per zone without hard-coding any ids.
 data "aws_subnets" "default" {
   filter {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
+  }
+
+  filter {
+    name   = "default-for-az"
+    values = ["true"]
   }
 }
 

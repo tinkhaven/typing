@@ -4,3 +4,9 @@
 *.tfvars
 !*.tfvars.example
 .terraform.lock.hcl
+
+# Saved plans embed the full resolved configuration, account identifiers
+# included. Never commit one.
+tfplan
+*.tfplan
+*.tfplan.*
