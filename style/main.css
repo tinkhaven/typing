@@ -287,13 +287,23 @@ a { color: var(--accent); }
   display: grid;
   gap: 0.25rem;
   margin: 1.25rem 0;
-  /* The whole keyboard scales with the viewport; keys are sized in em so the
-     stagger offsets stay proportional. */
-  font-size: clamp(0.6rem, 1.6vw, 0.85rem);
+  /* Shrink-wrap the keys rather than filling the container. Without this the
+     grid is as wide as the page while each key row is only as wide as its own
+     keys, so centring the space bar centred it against the page and it sat off
+     to the right of the keyboard it belongs to. max-content makes "centred"
+     mean "centred under the keys", for all 77 layouts, without guessing an
+     indent per layout. */
+  /* No overflow-x here: it needs a constrained width and would fight
+     max-content, collapsing the box to zero. The clamp below keeps even a
+     14-column layout inside a phone screen (14 x 2.65 x 0.6rem is about
+     22rem), so there is nothing to scroll. */
+  width: max-content;
+  font-size: clamp(0.55rem, 1.6vw, 0.85rem);
 }
 
 .keyboard-row { display: flex; gap: 0.25rem; }
 .keyboard-row-space { justify-content: center; padding-left: 0 !important; }
+.keyboard-row-space .key-space { margin-inline: auto; }
 
 .key {
   position: relative;
