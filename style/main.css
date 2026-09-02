@@ -419,6 +419,20 @@ a { color: var(--accent); }
 .prose { max-width: 42rem; }
 .prose h1 { font-size: 1.4rem; }
 .prose h2 { font-size: 1.05rem; margin-top: 1.75rem; }
+.prose .lede {
+  font-size: 1.02rem;
+  color: var(--ink);
+  border-left: 2px solid var(--accent);
+  padding-left: 0.85rem;
+}
+.prose code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.05em 0.3em;
+}
 .prose .caveat { color: var(--ink-soft); font-size: 0.85rem; border-left: 2px solid var(--line); padding-left: 0.75rem; }
 
 .site-footer {

@@ -184,6 +184,10 @@ messages! {
     ),
     /// About
     About => ("About", "Over", "À propos", "Über"),
+    /// Privacy
+    Privacy => ("Privacy", "Privacy", "Confidentialité", "Datenschutz"),
+    /// Terms of use
+    Terms => ("Terms", "Voorwaarden", "Conditions", "Nutzungsbedingungen"),
     /// Next lesson
     NextLesson => ("Next lesson", "Volgende les", "Leçon suivante", "Nächste Lektion"),
     /// Previous lesson

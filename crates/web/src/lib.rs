@@ -17,6 +17,7 @@ pub mod about;
 pub mod board;
 pub mod i18n;
 pub mod keyboard;
+pub mod legal;
 pub mod practice;
 pub mod protocol;
 pub mod settings;
@@ -35,6 +36,7 @@ use leptos_router::{
 use crate::{
     about::About,
     i18n::{Locale, Msg},
+    legal::{Privacy, Terms},
     practice::Practice,
     settings::{ProgressStore, Settings},
 };
@@ -79,6 +81,8 @@ pub fn App() -> impl IntoView {
                 <Routes fallback=|| view! { <NotFound /> }>
                     <Route path=StaticSegment("") view=Practice />
                     <Route path=StaticSegment("about") view=About />
+                    <Route path=StaticSegment("privacy") view=Privacy />
+                    <Route path=StaticSegment("terms") view=Terms />
                 </Routes>
             </main>
             <Footer />
@@ -157,9 +161,11 @@ fn Footer() -> impl IntoView {
                 " by Felipe Emmanuel Ferreira de Castro. GPL-3.0-or-later. "
                 <a href="https://github.com/tinkhaven/typing" rel="noreferrer">"Source"</a>
                 " · "
-                <A href="/about">
-                    {move || settings.locale.get().text(Msg::About)}
-                </A>
+                <A href="/about">{move || settings.locale.get().text(Msg::About)}</A>
+                " · "
+                <A href="/privacy">{move || settings.locale.get().text(Msg::Privacy)}</A>
+                " · "
+                <A href="/terms">{move || settings.locale.get().text(Msg::Terms)}</A>
             </p>
         </footer>
     }
