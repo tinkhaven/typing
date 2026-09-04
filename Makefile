@@ -55,6 +55,10 @@ secrets-history: ## Scan every blob in every commit, ever (slow, thorough)
 		printf '\n$(DIM)gitleaks not installed — "brew install gitleaks" for a second opinion$(OFF)\n'; \
 	fi
 
+.PHONY: sign-in
+sign-in: ## Store the Google OAuth credentials in SSM (interactive)
+	@./scripts/configure-sign-in.sh
+
 .PHONY: audit
 audit: ## Check dependencies for known vulnerabilities
 	@if command -v cargo-audit >/dev/null 2>&1; then \
