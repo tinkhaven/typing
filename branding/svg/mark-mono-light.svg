@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Tinkhaven Typing">
   <title>Tinkhaven Typing</title>
 
-    <polygon points="46.00,36.30 56.00,26.30 56.00,39.30 46.00,49.30" fill="none" stroke="#f2ece4" stroke-width="2.0" stroke-linejoin="round"/>
-    <polygon points="8.00,36.30 46.00,36.30 46.00,49.30 8.00,49.30" fill="none" stroke="#f2ece4" stroke-width="2.0" stroke-linejoin="round"/>
-    <polygon points="8.00,21.30 18.00,11.30 56.00,11.30 46.00,21.30" fill="none" stroke="#f2ece4" stroke-width="2.0" stroke-linejoin="round"/>
-    <ellipse cx="17.75" cy="16.30" rx="3.6" ry="2.0" fill="none" stroke="#f2ece4" stroke-width="1.6"/>
-    <ellipse cx="27.25" cy="16.30" rx="3.6" ry="2.0" fill="none" stroke="#f2ece4" stroke-width="1.6"/>
-    <ellipse cx="36.75" cy="16.30" rx="3.6" ry="2.0" fill="none" stroke="#f2ece4" stroke-width="1.6"/>
-    <ellipse cx="46.25" cy="16.30" rx="3.6" ry="2.0" fill="none" stroke="#f2ece4" stroke-width="1.6"/>
-    <polygon points="46.00,21.30 56.00,11.30 56.00,26.30 46.00,36.30" fill="none" stroke="#f2ece4" stroke-width="2.0" stroke-linejoin="round"/>
-    <polygon points="8.00,21.30 46.00,21.30 46.00,36.30 8.00,36.30" fill="none" stroke="#f2ece4" stroke-width="2.0" stroke-linejoin="round"/>
+    <polygon points="46.25,36.16 55.75,31.41 55.75,42.81 46.25,47.56" fill="none" stroke="#f2ece4" stroke-width="2.0" stroke-linejoin="round"/>
+    <polygon points="8.25,36.16 46.25,36.16 46.25,47.56 8.25,47.56" fill="none" stroke="#f2ece4" stroke-width="2.0" stroke-linejoin="round"/>
+    <polygon points="8.25,24.76 17.75,20.01 55.75,20.01 46.25,24.76" fill="none" stroke="#f2ece4" stroke-width="2.0" stroke-linejoin="round"/>
+    <ellipse cx="17.75" cy="22.38" rx="2.85" ry="1.425" fill="none" stroke="#f2ece4" stroke-width="1.6"/>
+    <ellipse cx="27.25" cy="22.38" rx="2.85" ry="1.425" fill="none" stroke="#f2ece4" stroke-width="1.6"/>
+    <ellipse cx="36.75" cy="22.38" rx="2.85" ry="1.425" fill="none" stroke="#f2ece4" stroke-width="1.6"/>
+    <ellipse cx="46.25" cy="22.38" rx="2.85" ry="1.425" fill="none" stroke="#f2ece4" stroke-width="1.6"/>
+    <polygon points="46.25,24.76 55.75,20.01 55.75,31.41 46.25,36.16" fill="none" stroke="#f2ece4" stroke-width="2.0" stroke-linejoin="round"/>
+    <polygon points="8.25,24.76 46.25,24.76 46.25,36.16 8.25,36.16" fill="none" stroke="#f2ece4" stroke-width="2.0" stroke-linejoin="round"/>
 </svg>

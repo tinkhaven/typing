@@ -2,13 +2,17 @@
   <title>Tinkhaven Typing</title>
 
     <rect width="64" height="64" rx="14" fill="#faf8f6"/>
-    <polygon points="46.00,36.30 56.00,26.30 56.00,39.30 46.00,49.30" fill="#98907f"/>
-    <polygon points="8.00,36.30 46.00,36.30 46.00,49.30 8.00,49.30" fill="#b9b0a2"/>
-    <polygon points="8.00,21.30 18.00,11.30 56.00,11.30 46.00,21.30" fill="#4a86e8"/>
-    <ellipse cx="17.75" cy="18.60" rx="3.6" ry="2.0" fill="#9a9ae0"/><rect x="14.15" y="16.30" width="7.2" height="2.3" fill="#9a9ae0"/><ellipse cx="17.75" cy="16.30" rx="3.6" ry="2.0" fill="#c8c8ff"/>
-    <ellipse cx="27.25" cy="18.60" rx="3.6" ry="2.0" fill="#d09090"/><rect x="23.65" y="16.30" width="7.2" height="2.3" fill="#d09090"/><ellipse cx="27.25" cy="16.30" rx="3.6" ry="2.0" fill="#f2b6b6"/>
-    <ellipse cx="36.75" cy="18.60" rx="3.6" ry="2.0" fill="#8ad2a2"/><rect x="33.15" y="16.30" width="7.2" height="2.3" fill="#8ad2a2"/><ellipse cx="36.75" cy="16.30" rx="3.6" ry="2.0" fill="#b6f2c6"/>
-    <ellipse cx="46.25" cy="18.60" rx="3.6" ry="2.0" fill="#d0d068"/><rect x="42.65" y="16.30" width="7.2" height="2.3" fill="#d0d068"/><ellipse cx="46.25" cy="16.30" rx="3.6" ry="2.0" fill="#f2f296"/>
-    <polygon points="46.00,21.30 56.00,11.30 56.00,26.30 46.00,36.30" fill="#1f4f9c"/>
-    <polygon points="8.00,21.30 46.00,21.30 46.00,36.30 8.00,36.30" fill="#2f6fd0"/>
+    <polygon points="46.25,36.16 55.75,31.41 55.75,42.81 46.25,47.56" fill="#948b7b"/>
+    <polygon points="8.25,36.16 46.25,36.16 46.25,47.56 8.25,47.56" fill="#b9b0a2"/>
+    <rect x="8.25" y="36.16" width="38.00" height="1.1" fill="#fff" opacity=".18"/>
+    <rect x="8.25" y="36.16" width="38.00" height="1.4" fill="#000" opacity=".16"/>
+    <polygon points="46.25,36.16 55.75,31.41 55.75,32.81 46.25,37.56" fill="#000" opacity=".16"/>
+    <polygon points="8.25,24.76 17.75,20.01 55.75,20.01 46.25,24.76" fill="#5a90ea"/>
+    <ellipse cx="17.75" cy="24.52" rx="2.85" ry="1.43" fill="#9a9ae0"/><rect x="14.90" y="22.38" width="5.70" height="2.14" fill="#9a9ae0"/><ellipse cx="17.75" cy="22.38" rx="2.85" ry="1.43" fill="#c8c8ff"/><ellipse cx="17.75" cy="22.38" rx="1.77" ry="0.88" fill="#fff" opacity=".22"/>
+    <ellipse cx="27.25" cy="24.52" rx="2.85" ry="1.43" fill="#d09090"/><rect x="24.40" y="22.38" width="5.70" height="2.14" fill="#d09090"/><ellipse cx="27.25" cy="22.38" rx="2.85" ry="1.43" fill="#f2b6b6"/><ellipse cx="27.25" cy="22.38" rx="1.77" ry="0.88" fill="#fff" opacity=".22"/>
+    <ellipse cx="36.75" cy="24.52" rx="2.85" ry="1.43" fill="#8ad2a2"/><rect x="33.90" y="22.38" width="5.70" height="2.14" fill="#8ad2a2"/><ellipse cx="36.75" cy="22.38" rx="2.85" ry="1.43" fill="#b6f2c6"/><ellipse cx="36.75" cy="22.38" rx="1.77" ry="0.88" fill="#fff" opacity=".22"/>
+    <ellipse cx="46.25" cy="24.52" rx="2.85" ry="1.43" fill="#d0d068"/><rect x="43.40" y="22.38" width="5.70" height="2.14" fill="#d0d068"/><ellipse cx="46.25" cy="22.38" rx="2.85" ry="1.43" fill="#f2f296"/><ellipse cx="46.25" cy="22.38" rx="1.77" ry="0.88" fill="#fff" opacity=".22"/>
+    <polygon points="46.25,24.76 55.75,20.01 55.75,31.41 46.25,36.16" fill="#1e4d99"/>
+    <polygon points="8.25,24.76 46.25,24.76 46.25,36.16 8.25,36.16" fill="#2f6fd0"/>
+    <rect x="8.25" y="24.76" width="38.00" height="1.1" fill="#fff" opacity=".18"/>
 </svg>

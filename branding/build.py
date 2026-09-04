@@ -32,18 +32,38 @@ FONTS = ("system-ui,-apple-system,'Segoe UI',Helvetica,Arial,"
 #   the top face is a parallelogram skewed 10 right and 10 up,
 #   the front face hangs below it,
 #   the right face joins the two.
-SKEW = 10.0          # horizontal offset of the back edge
-BRICK_W = 38.0       # width of the front face
-UPPER_H = 15.0       # height of the upper brick's front face
-LOWER_H = 13.0       # height of the lower brick's front face
-STUD_RX, STUD_RY = 3.6, 2.0
-STUD_H = 2.3         # how far a stud stands proud
+# Proportions taken from real bricks rather than guessed. A LEGO module is
+# 8.0mm, a brick is 9.6mm tall, a stud is 4.8mm across and stands 1.8mm proud.
+# As ratios of the module: height 1.20, stud diameter 0.60, stud height 0.225,
+# and stud centres sit half a module in from each edge.
+#
+# The first drawing had bricks 1.58 modules tall with studs 0.76 across — 32%
+# too tall and 26% too fat — which is why it read as a container rather than a
+# brick. Everything below is derived from MODULE so the ratios stay right.
+MODULE = 9.5
+MODULES_ACROSS = 4
 
-# Each brick needs three tones: lit top, mid front, shaded side.
-BLUE  = ("#4a86e8", "#2f6fd0", "#1f4f9c")     # this port
-STONE = ("#cfc6b8", "#b9b0a2", "#98907f")     # Klavaro, underneath
+BRICK_W = MODULE * MODULES_ACROSS
+BRICK_H = MODULE * 1.20
+# 2:1 dimetric, the classic isometric-ish projection: one module of depth moves
+# the back edge a full module right but only half a module up. A 45 degree skew
+# — which the previous version used — puts the eye almost directly overhead, and
+# the top face came out nearly as deep as the front face is tall. In the
+# reference photos it is markedly shallower than that.
+SKEW_X = MODULE
+SKEW_Y = MODULE * 0.5
+STUD_RX = MODULE * 0.30  # 0.60 diameter
+STUD_RY = STUD_RX * 0.5  # a circle in 2:1 dimetric, so exactly half
+STUD_H = MODULE * 0.225
 
-# Studs take their own colour on the top face, with a darker cylinder wall.
+# Each brick needs three tones: lit top, mid front, shaded side. The step
+# between them is what does the work — in the reference photos the side face in
+# shadow is markedly darker than the front, not slightly.
+BLUE  = ("#5a90ea", "#2f6fd0", "#1e4d99")     # this port
+STONE = ("#d6cec1", "#b9b0a2", "#948b7b")     # Klavaro, underneath
+
+# Studs take their own colour, with a darker cylinder wall and a rim on top —
+# real studs are not flat discs. No wordmark on them: that part is LEGO's.
 STUDS = [("#c8c8ff", "#9a9ae0"), ("#f2b6b6", "#d09090"),
          ("#b6f2c6", "#8ad2a2"), ("#f2f296", "#d0d068")]
 
@@ -59,15 +79,20 @@ def _poly(points, fill, stroke=None, width=2.0):
 
 
 def _stud(cx, cy, top, wall):
-    """A cylinder: wall behind, then the lit top face."""
+    """A cylinder standing on the top face: wall, lit top, then a faint rim."""
     return (
-        f'<ellipse cx="{cx:.2f}" cy="{cy + STUD_H:.2f}" rx="{STUD_RX}" ry="{STUD_RY}" fill="{wall}"/>'
-        f'<rect x="{cx - STUD_RX:.2f}" y="{cy:.2f}" width="{STUD_RX * 2}" height="{STUD_H}" fill="{wall}"/>'
-        f'<ellipse cx="{cx:.2f}" cy="{cy:.2f}" rx="{STUD_RX}" ry="{STUD_RY}" fill="{top}"/>'
+        f'<ellipse cx="{cx:.2f}" cy="{cy + STUD_H:.2f}" rx="{STUD_RX:.2f}" '
+        f'ry="{STUD_RY:.2f}" fill="{wall}"/>'
+        f'<rect x="{cx - STUD_RX:.2f}" y="{cy:.2f}" width="{STUD_RX * 2:.2f}" '
+        f'height="{STUD_H:.2f}" fill="{wall}"/>'
+        f'<ellipse cx="{cx:.2f}" cy="{cy:.2f}" rx="{STUD_RX:.2f}" '
+        f'ry="{STUD_RY:.2f}" fill="{top}"/>'
+        f'<ellipse cx="{cx:.2f}" cy="{cy:.2f}" rx="{STUD_RX * 0.62:.2f}" '
+        f'ry="{STUD_RY * 0.62:.2f}" fill="#fff" opacity=".22"/>'
     )
 
 
-def _brick(x, y, height, tones, studs, mono=None):
+def _brick(x, y, tones, studs, mono=None, height=None):
     """One brick. `y` is the front face's top-left; the top face sits above it.
 
     With `studs=False` the top face is omitted too, which is what a brick with
@@ -77,17 +102,18 @@ def _brick(x, y, height, tones, studs, mono=None):
     line art: outlines only. Filling it flat produced a black blob with the
     studs and the seam between the two bricks both swallowed.
     """
+    height = BRICK_H if height is None else height
     top, front, side = tones
     out = []
     edge = mono if mono else None
 
     if studs:
-        out.append(_poly([(x, y), (x + SKEW, y - SKEW),
-                          (x + SKEW + BRICK_W, y - SKEW), (x + BRICK_W, y)],
+        out.append(_poly([(x, y), (x + SKEW_X, y - SKEW_Y),
+                          (x + SKEW_X + BRICK_W, y - SKEW_Y), (x + BRICK_W, y)],
                          top, stroke=edge))
         for i, (stud_top, stud_wall) in enumerate(STUDS):
-            cx = x + SKEW / 2 + BRICK_W * (i + 0.5) / 4
-            cy = y - SKEW / 2
+            cx = x + SKEW_X / 2 + BRICK_W * (i + 0.5) / 4
+            cy = y - SKEW_Y / 2
             if mono:
                 out.append(
                     f'<ellipse cx="{cx:.2f}" cy="{cy:.2f}" rx="{STUD_RX}" ry="{STUD_RY}" '
@@ -95,13 +121,25 @@ def _brick(x, y, height, tones, studs, mono=None):
             else:
                 out.append(_stud(cx, cy, stud_top, stud_wall))
 
-    out.append(_poly([(x + BRICK_W, y), (x + SKEW + BRICK_W, y - SKEW),
-                      (x + SKEW + BRICK_W, y - SKEW + height), (x + BRICK_W, y + height)],
+    out.append(_poly([(x + BRICK_W, y), (x + SKEW_X + BRICK_W, y - SKEW_Y),
+                      (x + SKEW_X + BRICK_W, y - SKEW_Y + height),
+                      (x + BRICK_W, y + height)],
                      side, stroke=edge))
     out.append(_poly([(x, y), (x + BRICK_W, y),
                       (x + BRICK_W, y + height), (x, y + height)],
                      front, stroke=edge))
+    if not mono:
+        # A thin lift along the top edge of the front face: bricks are bevelled,
+        # and this is where the light actually catches. A bar across the middle
+        # of the face — which the first draft had — reads as a slot instead.
+        out.append(f'<rect x="{x:.2f}" y="{y:.2f}" width="{BRICK_W:.2f}" '
+                   f'height="1.1" fill="#fff" opacity=".18"/>')
     return out
+
+
+# Overall size of the mark, so callers can centre it instead of guessing.
+MARK_W = SKEW_X + BRICK_W
+MARK_H = SKEW_Y + STUD_RY + STUD_H + BRICK_H * 2
 
 
 def brick(x=0.0, y=0.0, mono=None):
@@ -109,15 +147,31 @@ def brick(x=0.0, y=0.0, mono=None):
 
     Only the upper brick shows studs and a top face. The lower one is the
     foundation — Klavaro — and you see just its front and side, exactly as you
-    would if something were stacked on it.
+    would if something were stacked on it. Both are the same height, because
+    they are both ordinary bricks.
     """
-    upper_y = y + SKEW + STUD_RY + STUD_H
-    lower_y = upper_y + UPPER_H
+    upper_y = y + SKEW_Y + STUD_RY + STUD_H
+    lower_y = upper_y + BRICK_H
 
     out = []
-    out += _brick(x, lower_y, LOWER_H, STONE, studs=False, mono=mono)
-    out += _brick(x, upper_y, UPPER_H, BLUE, studs=True, mono=mono)
+    out += _brick(x, lower_y, STONE, studs=False, mono=mono)
+    if not mono:
+        # Where two bricks meet there is a shadow. Without it the stack reads as
+        # one object that changes colour halfway down.
+        out.append(f'<rect x="{x:.2f}" y="{lower_y:.2f}" width="{BRICK_W:.2f}" '
+                   f'height="1.4" fill="#000" opacity=".16"/>')
+        out.append(_poly([(x + BRICK_W, lower_y),
+                          (x + SKEW_X + BRICK_W, lower_y - SKEW_Y),
+                          (x + SKEW_X + BRICK_W, lower_y - SKEW_Y + 1.4),
+                          (x + BRICK_W, lower_y + 1.4)], "#000") 
+                   .replace('fill="#000"', 'fill="#000" opacity=".16"'))
+    out += _brick(x, upper_y, BLUE, studs=True, mono=mono)
     return "\n    ".join(out)
+
+
+def centred(box_w, box_h, scale=1.0):
+    """Top-left corner that centres the mark in a box."""
+    return ((box_w - MARK_W * scale) / 2, (box_h - MARK_H * scale) / 2)
 
 
 def svg(view, body, defs=True, title="Tinkhaven Typing"):
@@ -142,32 +196,33 @@ def wordmark(x, y, size, ink=INK, sub=True, anchor="start"):
 files = {}
 
 # Square mark, transparent. 8px padding inside a 64 box.
-files["mark.svg"] = svg("0 0 64 64", brick(8, 7))
+MX, MY = centred(64, 64)
+files["mark.svg"] = svg("0 0 64 64", brick(MX, MY))
 
 # Single colour, for one-colour printing or stamps.
-files["mark-mono-dark.svg"]  = svg("0 0 64 64", brick(8, 7, mono=INK), defs=False)
-files["mark-mono-light.svg"] = svg("0 0 64 64", brick(8, 7, mono="#f2ece4"), defs=False)
+files["mark-mono-dark.svg"]  = svg("0 0 64 64", brick(MX, MY, mono=INK), defs=False)
+files["mark-mono-light.svg"] = svg("0 0 64 64", brick(MX, MY, mono="#f2ece4"), defs=False)
 
 # A tile for places that need an opaque icon (app icons, some launchers).
 files["mark-badge.svg"] = svg(
     "0 0 64 64",
-    f'<rect width="64" height="64" rx="14" fill="#faf8f6"/>\n    {brick(8, 7)}')
+    f'<rect width="64" height="64" rx="14" fill="#faf8f6"/>\n    {brick(MX, MY)}')
 files["mark-badge-dark.svg"] = svg(
     "0 0 64 64",
-    f'<rect width="64" height="64" rx="14" fill="#17161a"/>\n    {brick(8, 7)}')
+    f'<rect width="64" height="64" rx="14" fill="#17161a"/>\n    {brick(MX, MY)}')
 
 # Horizontal lockup: mark left, name right.
 files["logo-horizontal.svg"] = svg(
-    "0 0 300 64", brick(2, 7) + "\n    " + wordmark(60, 34, 21))
+    "0 0 300 64", brick(2, (64 - MARK_H) / 2) + "\n    " + wordmark(60, 34, 21))
 files["logo-horizontal-light.svg"] = svg(
-    "0 0 300 64", brick(2, 7) + "\n    " + wordmark(60, 34, 21, ink="#f2ece4"))
+    "0 0 300 64", brick(2, (64 - MARK_H) / 2) + "\n    " + wordmark(60, 34, 21, ink="#f2ece4"))
 
 # Stacked lockup: mark above centred name.
 files["logo-stacked.svg"] = svg(
-    "0 0 240 116", brick(96, 4) + "\n    " + wordmark(120, 80, 22, anchor="middle"))
+    "0 0 240 116", brick(120 - MARK_W / 2, 6) + "\n    " + wordmark(120, 80, 22, anchor="middle"))
 files["logo-stacked-light.svg"] = svg(
     "0 0 240 116",
-    brick(96, 4) + "\n    " + wordmark(120, 80, 22, ink="#f2ece4", anchor="middle"))
+    brick(120 - MARK_W / 2, 6) + "\n    " + wordmark(120, 80, 22, ink="#f2ece4", anchor="middle"))
 
 # Text only.
 files["wordmark.svg"] = svg("0 0 260 44", wordmark(0, 22, 22), defs=False)

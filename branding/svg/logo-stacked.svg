@@ -1,15 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 116" role="img" aria-label="Tinkhaven Typing">
   <title>Tinkhaven Typing</title>
 
-    <polygon points="134.00,33.30 144.00,23.30 144.00,36.30 134.00,46.30" fill="#98907f"/>
-    <polygon points="96.00,33.30 134.00,33.30 134.00,46.30 96.00,46.30" fill="#b9b0a2"/>
-    <polygon points="96.00,18.30 106.00,8.30 144.00,8.30 134.00,18.30" fill="#4a86e8"/>
-    <ellipse cx="105.75" cy="15.60" rx="3.6" ry="2.0" fill="#9a9ae0"/><rect x="102.15" y="13.30" width="7.2" height="2.3" fill="#9a9ae0"/><ellipse cx="105.75" cy="13.30" rx="3.6" ry="2.0" fill="#c8c8ff"/>
-    <ellipse cx="115.25" cy="15.60" rx="3.6" ry="2.0" fill="#d09090"/><rect x="111.65" y="13.30" width="7.2" height="2.3" fill="#d09090"/><ellipse cx="115.25" cy="13.30" rx="3.6" ry="2.0" fill="#f2b6b6"/>
-    <ellipse cx="124.75" cy="15.60" rx="3.6" ry="2.0" fill="#8ad2a2"/><rect x="121.15" y="13.30" width="7.2" height="2.3" fill="#8ad2a2"/><ellipse cx="124.75" cy="13.30" rx="3.6" ry="2.0" fill="#b6f2c6"/>
-    <ellipse cx="134.25" cy="15.60" rx="3.6" ry="2.0" fill="#d0d068"/><rect x="130.65" y="13.30" width="7.2" height="2.3" fill="#d0d068"/><ellipse cx="134.25" cy="13.30" rx="3.6" ry="2.0" fill="#f2f296"/>
-    <polygon points="134.00,18.30 144.00,8.30 144.00,23.30 134.00,33.30" fill="#1f4f9c"/>
-    <polygon points="96.00,18.30 134.00,18.30 134.00,33.30 96.00,33.30" fill="#2f6fd0"/>
+    <polygon points="134.25,25.71 143.75,20.96 143.75,32.36 134.25,37.11" fill="#948b7b"/>
+    <polygon points="96.25,25.71 134.25,25.71 134.25,37.11 96.25,37.11" fill="#b9b0a2"/>
+    <rect x="96.25" y="25.71" width="38.00" height="1.1" fill="#fff" opacity=".18"/>
+    <rect x="96.25" y="25.71" width="38.00" height="1.4" fill="#000" opacity=".16"/>
+    <polygon points="134.25,25.71 143.75,20.96 143.75,22.36 134.25,27.11" fill="#000" opacity=".16"/>
+    <polygon points="96.25,14.31 105.75,9.56 143.75,9.56 134.25,14.31" fill="#5a90ea"/>
+    <ellipse cx="105.75" cy="14.07" rx="2.85" ry="1.43" fill="#9a9ae0"/><rect x="102.90" y="11.94" width="5.70" height="2.14" fill="#9a9ae0"/><ellipse cx="105.75" cy="11.94" rx="2.85" ry="1.43" fill="#c8c8ff"/><ellipse cx="105.75" cy="11.94" rx="1.77" ry="0.88" fill="#fff" opacity=".22"/>
+    <ellipse cx="115.25" cy="14.07" rx="2.85" ry="1.43" fill="#d09090"/><rect x="112.40" y="11.94" width="5.70" height="2.14" fill="#d09090"/><ellipse cx="115.25" cy="11.94" rx="2.85" ry="1.43" fill="#f2b6b6"/><ellipse cx="115.25" cy="11.94" rx="1.77" ry="0.88" fill="#fff" opacity=".22"/>
+    <ellipse cx="124.75" cy="14.07" rx="2.85" ry="1.43" fill="#8ad2a2"/><rect x="121.90" y="11.94" width="5.70" height="2.14" fill="#8ad2a2"/><ellipse cx="124.75" cy="11.94" rx="2.85" ry="1.43" fill="#b6f2c6"/><ellipse cx="124.75" cy="11.94" rx="1.77" ry="0.88" fill="#fff" opacity=".22"/>
+    <ellipse cx="134.25" cy="14.07" rx="2.85" ry="1.43" fill="#d0d068"/><rect x="131.40" y="11.94" width="5.70" height="2.14" fill="#d0d068"/><ellipse cx="134.25" cy="11.94" rx="2.85" ry="1.43" fill="#f2f296"/><ellipse cx="134.25" cy="11.94" rx="1.77" ry="0.88" fill="#fff" opacity=".22"/>
+    <polygon points="134.25,14.31 143.75,9.56 143.75,20.96 134.25,25.71" fill="#1e4d99"/>
+    <polygon points="96.25,14.31 134.25,14.31 134.25,25.71 96.25,25.71" fill="#2f6fd0"/>
+    <rect x="96.25" y="14.31" width="38.00" height="1.1" fill="#fff" opacity=".18"/>
     <text x="120" y="80" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,'DejaVu Sans',sans-serif" font-size="22" font-weight="650" letter-spacing="-0.26" fill="#24211e" text-anchor="middle">Tinkhaven Typing</text>
     <text x="120" y="100.2" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,'DejaVu Sans',sans-serif" font-size="9.24" fill="#24211e" opacity=".62" text-anchor="middle">Learn to touch type</text>
 </svg>

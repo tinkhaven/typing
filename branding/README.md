@@ -32,6 +32,27 @@ attempt looked like a pencil case. A brick only reads as a brick when you can
 see the top face with round studs standing on it, so each brick is three faces
 with the light coming from above.
 
+### Proportions
+
+Measured, not guessed. A LEGO module is 8.0 mm, a brick is 9.6 mm tall, a stud
+is 4.8 mm across and stands 1.8 mm proud. As ratios of the module:
+
+| | Ratio to module | Why it matters |
+|---|---|---|
+| Brick height | 1.20 | At 1.58 it read as a container, not a brick |
+| Stud diameter | 0.60 | At 0.76 the studs nearly touch and look like buttons |
+| Stud height | 0.225 | Any taller and they look like pegs |
+| Stud centre inset | 0.50 from each edge | Studs sit centred in their module |
+
+`build.py` derives everything from `MODULE`, so changing the size cannot break
+the ratios. The projection is **2:1 dimetric** — a module of depth moves the
+back edge a full module right but only half a module up. A 45° skew puts the eye
+almost directly overhead and makes the top face nearly as deep as the front face
+is tall, which is not what a brick on a desk looks like.
+
+Two bricks that meet get a **seam shadow**. Without it the stack reads as one
+object that changes colour halfway down.
+
 ## Palette
 
 The key colours are not chosen, they are inherited: they are Klavaro's finger
@@ -88,9 +109,22 @@ them composite badly against nothing.
 - **Below about 16px**, use `mark.svg` and nothing smaller. At that size the
   studs are one pixel each and the mark becomes a smudge.
 
-## Attribution
+## Attribution and trademarks
 
 The finger colours are Klavaro's, and Klavaro is GPL-3.0-or-later — see
-[CREDITS.md](../CREDITS.md). The bricks are a nod to LEGO, which is a trademark
-of the LEGO Group; this project is not associated with or endorsed by them, and
-the mark is a stylised brick rather than a reproduction of any product.
+[CREDITS.md](../CREDITS.md).
+
+The bricks are a nod to LEGO, which is a trademark of the LEGO Group. This
+project is not associated with or endorsed by them. Two deliberate lines were
+drawn while designing it:
+
+- **The word LEGO appears nowhere in the mark**, and the studs carry no
+  embossed wordmark. Real studs do; that part is theirs, and copying it would be
+  the actual trademark problem. Do not add it.
+- The mark is a **stylised brick**, not a reproduction of a specific product.
+  The generic interlocking-brick shape was held not to be a valid trade mark in
+  the EU (*Lego Juris v OHIM*, C-48/09 P), which is why a brick-shaped logo is
+  defensible where a brick-shaped logo carrying their wordmark would not be.
+
+None of that is legal advice. If this ever fronts something commercial, it is
+worth twenty minutes of a lawyer's time.
