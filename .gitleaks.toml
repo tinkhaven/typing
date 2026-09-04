@@ -1,0 +1,35 @@
+# gitleaks configuration.
+#
+# gitleaks is the second opinion in this repository: the pre-push hook and CI run
+# it alongside scripts/check-secrets.sh, and it deliberately knows nothing about
+# that script's .secretsallow. Two scanners that share an allowlist are one
+# scanner. So an exemption has to be argued twice, on purpose, and this file is
+# the only place gitleaks is told to ignore anything.
+
+[extend]
+# Keep every built-in rule; this file only adds an exemption.
+useDefault = true
+
+[[allowlists]]
+description = """
+RS256 test vectors under crates/web/tests/vectors.
+
+These are signed JWTs whose private key was generated once with OpenSSL and
+discarded immediately. They authenticate nothing, grant nothing, and expire in
+2100; the public modulus that verifies them sits in the same directory. They
+exist because generating a key at test time would mean depending on the `rsa`
+crate, which carries RUSTSEC-2023-0071 with no fix, and `cargo audit` reads
+dev-dependencies too. See that directory's README.
+
+Scoped to the exact filenames rather than the directory, so a new file dropped
+in there is still scanned.
+"""
+paths = [
+  '''^crates/web/tests/vectors/valid\.jwt$''',
+  '''^crates/web/tests/vectors/expired\.jwt$''',
+  '''^crates/web/tests/vectors/no_nonce\.jwt$''',
+  '''^crates/web/tests/vectors/unknown_kid\.jwt$''',
+  '''^crates/web/tests/vectors/wrong_audience\.jwt$''',
+  '''^crates/web/tests/vectors/wrong_issuer\.jwt$''',
+  '''^crates/web/tests/vectors/wrong_nonce\.jwt$''',
+]
