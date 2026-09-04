@@ -58,10 +58,12 @@ pub fn Privacy() -> impl IntoView {
             <UnconfiguredNotice />
 
             <p class="lede">
-                "The short version: there are no accounts, no cookies and no analytics.
-                Your settings and your scores are kept in your own browser and are never
-                sent anywhere. The only thing this site records about anybody is a
-                leaderboard entry, and only when you choose to publish one."
+                "The short version: no analytics, no tracking, and nothing stored about
+                you unless you ask for it. Your settings and scores live in your own
+                browser. Two things are optional and deliberate: publishing a score to
+                the leaderboard, and signing in to carry progress between devices. Signing
+                in sets one cookie and nothing else; without it there are no cookies at
+                all."
             </p>
 
             <h2>"Who is responsible"</h2>
@@ -74,7 +76,8 @@ pub fn Privacy() -> impl IntoView {
             <h2>"What happens when you just use the site"</h2>
             <p>
                 "Nothing is recorded. No cookie is set, no identifier is assigned, and no
-                analytics or tracking script runs — there are none on the page at all."
+                analytics or tracking script runs — there are none on the page at all.
+                That remains true for as long as you do not sign in."
             </p>
             <p>
                 "Your keyboard layout, interface language, practice language, current
@@ -83,6 +86,54 @@ pub fn Privacy() -> impl IntoView {
                 cleared, are stored in your browser's own local storage. That data stays
                 on your device. It is not sent to the server, and the operator cannot
                 see it. Clearing your browser's site data for this domain deletes it."
+            </p>
+
+            <h2>"If you sign in"</h2>
+            <p>
+                "Signing in is optional and exists for one reason: to carry your progress
+                between devices. Everything works without it."
+            </p>
+            <p>
+                "Sign-in uses Google. The only thing asked of Google is the "
+                <code>"openid"</code>" scope — deliberately not "<code>"email"</code>
+                " and not "<code>"profile"</code>". Google therefore returns a
+                pseudonymous subject identifier and nothing else. "
+                <strong>
+                    "This site never receives your email address or your name, and
+                    cannot contact or identify you."
+                </strong>
+            </p>
+            <p>
+                "That identifier is not stored either. What is stored is a keyed hash of
+                it, so the record cannot be matched back to a Google account without a
+                secret held only by the server. Against that hash sits exactly the same
+                progress your browser already keeps: best score per module, how many
+                exercises you have finished, and how far through the Basic lessons you
+                have got."
+            </p>
+            <p>
+                "One cookie is set, holding a signed session — no tracking identifier and
+                nothing readable by anyone else. It is strictly necessary for signing in,
+                which is why there is no consent banner asking about it; if you do not
+                sign in, it is never set. It lasts 90 days and is removed when you sign
+                out. Profiles nobody has touched for two years are deleted automatically."
+            </p>
+            <p>
+                "The legal basis is your consent, given by choosing to sign in. There is
+                a "<strong>"Delete my data"</strong>" button next to the sign-out link
+                that erases the stored profile immediately, without asking anyone."
+            </p>
+            <p>
+                "Google's own handling of your sign-in — that you authenticated, and when
+                — is Google's processing under its own privacy policy, not something this
+                site controls or can see."
+            </p>
+            <p>
+                "The consequence of holding so little is worth stating plainly: "
+                <strong>"there is no account recovery"</strong>
+                ". If you lose access to your Google account, the progress behind it
+                cannot be reached by you, by us, or by anybody — because there is nothing
+                stored that could prove it was yours."
             </p>
 
             <h2>"What crosses the network while you type"</h2>
@@ -142,12 +193,17 @@ pub fn Privacy() -> impl IntoView {
                 may ask for it in a portable form. Write to the address above."
             </p>
             <p>
-                "In practice there is very little to ask about, because there is very
-                little held. A published leaderboard entry is the only record, and it is
-                identified solely by a nickname you invented — so please quote the
-                nickname and roughly when you set it. That also means the operator has no
-                way to verify that a nickname is yours; a request to remove one will be
-                honoured, which is the trade-off that keeping no identity brings."
+                "In practice there is little to ask about, because little is held. If you
+                are signed in, the "<strong>"Delete my data"</strong>" button does the
+                whole of access-and-erasure for your profile without involving anybody —
+                it is your data and it should not need a letter."
+            </p>
+            <p>
+                "A published leaderboard entry is identified solely by a nickname you
+                invented, so please quote the nickname and roughly when you set it. That
+                also means the operator has no way to verify a nickname is yours; a
+                request to remove one will be honoured anyway, which is the trade-off that
+                keeping no identity brings."
             </p>
             <p>
                 "You can also complain to a supervisory authority. In Belgium that is the

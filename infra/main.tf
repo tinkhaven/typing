@@ -30,6 +30,8 @@ provider "aws" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 # ---------------------------------------------------------------------------
 # Network: the account's default VPC and its subnets
 # ---------------------------------------------------------------------------
@@ -175,6 +177,34 @@ resource "aws_dynamodb_table" "leaderboard" {
 }
 
 # ---------------------------------------------------------------------------
+# Signed-in visitors' progress
+#
+# One item per user, keyed by the pseudonymous identifier derived in
+# server/auth.rs. Holds no email address, no name and no provider identifier.
+# ---------------------------------------------------------------------------
+
+resource "aws_dynamodb_table" "profiles" {
+  name         = "${var.project}-profiles"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "user_id"
+
+  attribute {
+    name = "user_id"
+    type = "S"
+  }
+
+  # Pushed forward on every write, so only abandoned profiles expire.
+  ttl {
+    attribute_name = "expires_at"
+    enabled        = true
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+}
+
+# ---------------------------------------------------------------------------
 # Logs
 # ---------------------------------------------------------------------------
 
@@ -221,6 +251,61 @@ data "aws_iam_policy_document" "leaderboard_access" {
     actions   = ["dynamodb:Query", "dynamodb:PutItem"]
     resources = [aws_dynamodb_table.leaderboard.arn]
   }
+
+  statement {
+    sid = "ProfileReadWrite"
+    # Delete included so a signed-in visitor can erase their own profile from
+    # the app rather than by emailing the operator.
+    actions   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"]
+    resources = [aws_dynamodb_table.profiles.arn]
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Sign-in secrets
+#
+# The parameters are created out of band; Terraform references them by ARN and
+# never reads a value, so nothing secret reaches the state file. The *execution*
+# role needs the read permission, not the task role: the ECS agent resolves a
+# task definition's `secrets` before the container starts.
+# ---------------------------------------------------------------------------
+
+locals {
+  ssm_base = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.ssm_prefix}"
+
+  sign_in_secret_arns = [
+    "${local.ssm_base}/google_client_id",
+    "${local.ssm_base}/google_client_secret",
+    "${local.ssm_base}/session_secret",
+  ]
+
+  sign_in_secrets = var.enable_sign_in ? [
+    { name = "GOOGLE_CLIENT_ID", valueFrom = "${local.ssm_base}/google_client_id" },
+    { name = "GOOGLE_CLIENT_SECRET", valueFrom = "${local.ssm_base}/google_client_secret" },
+    { name = "SESSION_SECRET", valueFrom = "${local.ssm_base}/session_secret" },
+  ] : []
+}
+
+data "aws_iam_policy_document" "read_sign_in_secrets" {
+  statement {
+    sid       = "ReadSignInParameters"
+    actions   = ["ssm:GetParameters"]
+    resources = local.sign_in_secret_arns
+  }
+
+  statement {
+    sid     = "DecryptSecureStrings"
+    actions = ["kms:Decrypt"]
+    # The AWS-managed key SSM uses for SecureString parameters.
+    resources = ["arn:aws:kms:${var.aws_region}:${data.aws_caller_identity.current.account_id}:alias/aws/ssm"]
+  }
+}
+
+resource "aws_iam_role_policy" "read_sign_in_secrets" {
+  count  = var.enable_sign_in ? 1 : 0
+  name   = "${var.project}-sign-in-secrets"
+  role   = aws_iam_role.execution.id
+  policy = data.aws_iam_policy_document.read_sign_in_secrets.json
 }
 
 resource "aws_iam_role_policy" "leaderboard_access" {
@@ -389,9 +474,17 @@ resource "aws_ecs_task_definition" "app" {
 
     environment = [
       { name = "LEADERBOARD_TABLE", value = aws_dynamodb_table.leaderboard.name },
+      { name = "PROFILES_TABLE", value = aws_dynamodb_table.profiles.name },
       { name = "AWS_REGION", value = var.aws_region },
       { name = "RUST_LOG", value = "info,typing_web=info" },
+      # The OAuth redirect must match what is registered with Google exactly,
+      # so it is derived from the public hostname rather than guessed.
+      { name = "PUBLIC_BASE_URL", value = "https://${var.domain_name}" },
     ]
+
+    # Empty until enable_sign_in is set, which keeps the task startable before
+    # the parameters exist.
+    secrets = local.sign_in_secrets
 
     logConfiguration = {
       logDriver = "awslogs"

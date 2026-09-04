@@ -19,6 +19,7 @@ use typing_core::{
 };
 
 use crate::{
+    account::{sync_now, AccountState},
     board::BoardTable,
     i18n::Msg,
     keyboard::VirtualKeyboard,
@@ -43,6 +44,7 @@ enum Phase {
 pub fn Practice() -> impl IntoView {
     let settings = expect_context::<Settings>();
     let progress = expect_context::<ProgressStore>();
+    let account = expect_context::<AccountState>();
     let lessons = StoredValue::new(klavaro_lessons());
 
     // --- exercise and run state ------------------------------------------
@@ -285,6 +287,10 @@ pub fn Practice() -> impl IntoView {
                     settings.lesson.get_untracked(),
                 );
                 personal_best.set(improved);
+                // Carry it to the other devices, if anyone is signed in. A
+                // failure here is invisible and harmless: the local record is
+                // already saved.
+                sync_now(account, progress);
             }
             // Show the local score at once; the server's replaces it when its
             // reply arrives, and that is the one the board uses.

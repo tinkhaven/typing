@@ -217,6 +217,34 @@ impl Progress {
     }
 }
 
+impl Progress {
+    /// Combines two records of the same person's progress, keeping the better.
+    ///
+    /// Used when a signed-in visitor's browser and the server disagree — after
+    /// practising offline, or on a device that has not synced. Taking the
+    /// field-wise maximum means a sync can never lose a personal best, which is
+    /// the only outcome that would actually upset someone. Session counts are
+    /// maxed rather than added, because both sides may have counted the same
+    /// exercise and inflating the total is worse than under-counting it.
+    pub fn merge(&self, other: &Progress) -> Progress {
+        let mut best = self.best.clone();
+        for (module, theirs) in &other.best {
+            best.entry(module.clone())
+                .and_modify(|ours| {
+                    if theirs.speed > ours.speed {
+                        *ours = *theirs;
+                    }
+                })
+                .or_insert(*theirs);
+        }
+        Progress {
+            best,
+            lesson_reached: self.lesson_reached.max(other.lesson_reached),
+            sessions: self.sessions.max(other.sessions),
+        }
+    }
+}
+
 /// Reactive access to [`Progress`], persisted on every change.
 #[derive(Clone, Copy)]
 pub struct ProgressStore {
@@ -331,6 +359,78 @@ mod tests {
         // Failing a later one does not advance it.
         p.record(Module::Basic, &score(50.0, 20.0, None), 9);
         assert_eq!(p.lesson_reached, 7);
+    }
+
+    #[test]
+    fn merging_keeps_the_better_of_each_record() {
+        let mut local = Progress::default();
+        local.record(Module::Velocity, &score(96.0, 55.0, None), 1);
+        local.record(Module::Basic, &score(97.0, 20.0, None), 4);
+
+        let mut remote = Progress::default();
+        remote.record(Module::Velocity, &score(96.0, 70.0, None), 1);
+        remote.record(Module::Fluidness, &score(98.0, 60.0, Some(80.0)), 1);
+        remote.record(Module::Basic, &score(97.0, 20.0, None), 9);
+
+        let merged = local.merge(&remote);
+        assert_eq!(
+            merged.best_for(Module::Velocity).unwrap().speed,
+            70.0,
+            "remote was faster"
+        );
+        assert_eq!(merged.best_for(Module::Basic).unwrap().speed, 20.0);
+        assert!(
+            merged.best_for(Module::Fluidness).is_some(),
+            "remote-only record kept"
+        );
+        assert_eq!(merged.lesson_reached, 9, "furthest lesson wins");
+    }
+
+    #[test]
+    fn merging_never_loses_a_local_best() {
+        // The outcome that would actually upset somebody.
+        let mut local = Progress::default();
+        local.record(Module::Velocity, &score(99.0, 90.0, None), 1);
+        let merged = local.merge(&Progress::default());
+        assert_eq!(merged.best_for(Module::Velocity).unwrap().speed, 90.0);
+        // And the other way round.
+        assert_eq!(
+            Progress::default()
+                .merge(&local)
+                .best_for(Module::Velocity)
+                .unwrap()
+                .speed,
+            90.0
+        );
+    }
+
+    #[test]
+    fn merging_is_order_independent() {
+        let mut a = Progress::default();
+        a.record(Module::Velocity, &score(96.0, 55.0, None), 3);
+        let mut b = Progress::default();
+        b.record(Module::Velocity, &score(96.0, 70.0, None), 7);
+        assert_eq!(a.merge(&b), b.merge(&a));
+    }
+
+    #[test]
+    fn merging_does_not_inflate_the_session_count() {
+        // Both sides may have counted the same exercises; adding would
+        // double-count every one of them.
+        let mut a = Progress::default();
+        let mut b = Progress::default();
+        for _ in 0..5 {
+            a.record(Module::Basic, &score(97.0, 20.0, None), 1);
+            b.record(Module::Basic, &score(97.0, 20.0, None), 1);
+        }
+        assert_eq!(a.merge(&b).sessions, 5);
+    }
+
+    #[test]
+    fn merging_with_nothing_changes_nothing() {
+        let mut local = Progress::default();
+        local.record(Module::Velocity, &score(96.0, 55.0, None), 2);
+        assert_eq!(local.merge(&Progress::default()), local);
     }
 
     #[test]

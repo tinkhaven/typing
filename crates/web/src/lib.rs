@@ -14,6 +14,7 @@
 #![forbid(unsafe_code)]
 
 pub mod about;
+pub mod account;
 pub mod board;
 pub mod i18n;
 pub mod keyboard;
@@ -35,6 +36,7 @@ use leptos_router::{
 
 use crate::{
     about::About,
+    account::{AccountBar, AccountState},
     i18n::{Locale, Msg},
     legal::{Privacy, Terms},
     practice::Practice,
@@ -71,6 +73,7 @@ pub fn App() -> impl IntoView {
     let settings = Settings::default();
     provide_context(settings);
     provide_context(ProgressStore::default());
+    provide_context(AccountState::default());
 
     view! {
         <Stylesheet id="leptos" href="/pkg/typing.css" />
@@ -104,6 +107,7 @@ fn Header() -> impl IntoView {
             </A>
 
             <div class="pickers">
+                <AccountBar />
                 <label>
                     <span>{move || locale().text(Msg::Keyboard)}</span>
                     <select on:change=move |ev| settings.layout_name.set(event_target_value(&ev))>

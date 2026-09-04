@@ -37,3 +37,13 @@ output "aws_region" {
   description = "Region everything lives in; read by deploy.sh."
   value       = var.aws_region
 }
+
+output "profiles_table" {
+  description = "DynamoDB table holding signed-in visitors' progress."
+  value       = aws_dynamodb_table.profiles.name
+}
+
+output "google_redirect_uri" {
+  description = "Register exactly this as the authorised redirect URI in Google Cloud Console."
+  value       = "https://${var.domain_name}/auth/google/callback"
+}

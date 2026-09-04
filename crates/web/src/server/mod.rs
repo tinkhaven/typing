@@ -2,8 +2,13 @@
 //!
 //! Only compiled with the `ssr` feature; the WASM client never sees any of it.
 
+pub mod accounts;
+pub mod auth;
 pub mod corpus;
 pub mod leaderboard;
+pub mod profiles;
+pub mod routes;
+pub mod session;
 pub mod verify;
 pub mod ws;
 
@@ -14,8 +19,10 @@ use leptos::config::LeptosOptions;
 use tokio::sync::broadcast;
 use typing_core::{goals::Module, lesson::Lesson};
 
+use accounts::Accounts;
 use corpus::Corpora;
 use leaderboard::Leaderboard;
+use profiles::Profiles;
 
 /// How many board notifications are buffered per subscriber.
 const BOARD_CHANNEL_CAPACITY: usize = 16;
@@ -65,6 +72,10 @@ pub struct Shared {
     pub board_changes: broadcast::Sender<BoardChanged>,
     /// Leptos build configuration, for the rendering handler.
     pub leptos_options: LeptosOptions,
+    /// Sign-in configuration, or `None` when it is switched off.
+    pub accounts: Option<Accounts>,
+    /// Where signed-in visitors' progress is kept.
+    pub profiles: Profiles,
 }
 
 impl AppState {
@@ -79,6 +90,8 @@ impl AppState {
             leaderboard: Leaderboard::from_env().await,
             board_changes,
             leptos_options,
+            accounts: Accounts::from_env(),
+            profiles: Profiles::from_env().await,
         })))
     }
 }

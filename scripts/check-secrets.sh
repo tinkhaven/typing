@@ -71,6 +71,7 @@ PyPI token	pypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{20,}
 Hashicorp Vault token	hv[sb]\.[A-Za-z0-9_-]{20,}
 JSON web token	eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}
 Generic assigned secret	(password|passwd|secret|api[_-]?key|apikey|access[_-]?token|auth[_-]?token|client[_-]?secret|private[_-]?key)[[:space:]]*[:=][[:space:]]*("|')[^"']{8,}("|')
+Generic assigned secret (upper case)	(PASSWORD|PASSWD|SECRET|API_?KEY|APIKEY|ACCESS_?TOKEN|AUTH_?TOKEN|CLIENT_SECRET|PRIVATE_KEY)[[:space:]]*[:=][[:space:]]*("|')[^"']{8,}("|')
 Basic auth in a URL	[a-z][a-z0-9+.-]*://[^/[:space:]:@]+:[^/[:space:]@]+@
 Local filesystem path	/(Users|home)/[a-z][a-z0-9._-]+/
 RULESET

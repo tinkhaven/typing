@@ -97,3 +97,46 @@ variable "leaderboard_ttl_days" {
   type        = number
   default     = 365
 }
+
+variable "enable_sign_in" {
+  description = <<-EOT
+    Whether to wire Google sign-in into the task.
+
+    Off by default, and it must stay off until the three SSM parameters below
+    exist: ECS refuses to start a task whose `secrets` reference a parameter it
+    cannot read, so switching this on early takes the site down rather than
+    degrading. The application treats missing configuration as "sign-in is off"
+    and keeps serving, so there is no rush.
+
+    Create them first, then set this to true:
+
+      aws ssm put-parameter --type String       --name /typing/google_client_id     --value ...
+      aws ssm put-parameter --type SecureString --name /typing/google_client_secret --value ...
+      aws ssm put-parameter --type SecureString --name /typing/session_secret       --value "$(openssl rand -base64 48)"
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "ssm_prefix" {
+  description = <<-EOT
+    Path prefix for this deployment's parameters in SSM Parameter Store.
+
+    Terraform only ever references these by ARN — it never reads a value — so no
+    secret reaches the state file. The parameters are created out of band, by the
+    operator, using the commands in `enable_sign_in`.
+  EOT
+  type        = string
+  default     = "/typing"
+}
+
+variable "profile_ttl_days" {
+  description = <<-EOT
+    How long a signed-in visitor's profile survives without being touched.
+
+    Refreshed on every write, so this only removes profiles nobody is using.
+    Must match INACTIVITY_TTL_SECONDS in crates/web/src/server/profiles.rs.
+  EOT
+  type        = number
+  default     = 730
+}

@@ -186,6 +186,24 @@ messages! {
     About => ("About", "Over", "À propos", "Über"),
     /// Privacy
     Privacy => ("Privacy", "Privacy", "Confidentialité", "Datenschutz"),
+    /// Sign in with Google
+    SignInWithGoogle => (
+        "Sign in with Google",
+        "Inloggen met Google",
+        "Se connecter avec Google",
+        "Mit Google anmelden"
+    ),
+    /// Signed in
+    SignedIn => ("Signed in", "Ingelogd", "Connecté", "Angemeldet"),
+    /// Sign out
+    SignOut => ("Sign out", "Uitloggen", "Se déconnecter", "Abmelden"),
+    /// Delete everything stored about me
+    DeleteMyData => (
+        "Delete my data",
+        "Verwijder mijn gegevens",
+        "Supprimer mes données",
+        "Meine Daten löschen"
+    ),
     /// Terms of use
     Terms => ("Terms", "Voorwaarden", "Conditions", "Nutzungsbedingungen"),
     /// Next lesson

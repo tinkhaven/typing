@@ -41,8 +41,36 @@ tracing-subscriber = { version = "0.3", optional = true, features = ["env-filter
 # `default-https-client` rather than the `rustls` feature: the latter selects the
 # SDK's legacy TLS stack, which pins rustls 0.21 and rustls-webpki 0.101 —
 # versions carrying four RUSTSEC advisories. `cargo audit` in CI caught this.
+# --- sign-in (server only) ---
+# Google OpenID Connect. Only the `openid` scope is ever requested, so no email
+# address or name is received; see server/auth.rs.
+# `rust_crypto` is not optional in practice: jsonwebtoken 11 requires a crypto
+# provider to be selected by feature and has no default, so without this every
+# ID token verification fails at runtime. The pure-Rust backend is chosen over
+# aws_lc_rs because the latter needs a C toolchain the runtime image does not
+# carry.
+jsonwebtoken = { version = "11", optional = true, features = ["rust_crypto"] }
+# `rustls` is the feature name in reqwest 0.13 (it was `rustls-tls` in 0.12), and
+# webpki-roots bundles the trust store so verification does not depend on what
+# the container image happens to have installed.
+reqwest = { version = "0.13", optional = true, default-features = false, features = ["json", "form", "rustls", "webpki-roots", "charset", "http2"] }
+# Versions chosen to match what the tree already resolves, so the graph does not
+# carry two copies of sha2, base64 or rand.
+hmac = { version = "0.12", optional = true }
+sha2 = { version = "0.10", optional = true }
+base64 = { version = "0.22", optional = true }
+rand = { version = "0.9", optional = true }
+
 aws-config = { version = "1", optional = true, default-features = false, features = ["behavior-version-latest", "rt-tokio", "default-https-client"] }
 aws-sdk-dynamodb = { version = "1", optional = true, default-features = false, features = ["rt-tokio", "default-https-client"] }
+
+[dev-dependencies]
+# Only to generate a throwaway RSA key inside the sign-in test. Generating one
+# at test time rather than committing a PEM keeps a private key out of a public
+# repository — and out of the way of the secret scanner, which would be right to
+# object to one.
+rsa = "0.9"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
 
 [features]
 default = []
@@ -67,6 +95,12 @@ ssr = [
   "dep:tracing-subscriber",
   "dep:aws-config",
   "dep:aws-sdk-dynamodb",
+  "dep:jsonwebtoken",
+  "dep:reqwest",
+  "dep:hmac",
+  "dep:sha2",
+  "dep:base64",
+  "dep:rand",
 ]
 
 # Silence the cfg leptos uses for its own build detection.

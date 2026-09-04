@@ -37,11 +37,17 @@ pub fn About() -> impl IntoView {
 
             <h2>"What this site stores"</h2>
             <p>
-                "There are no accounts and no cookies. Your keyboard, language and lesson "
-                "choices are kept in your own browser's local storage and never sent anywhere. "
-                "Nothing at all is recorded about you unless you choose to publish a score, and "
-                "then only the nickname you type, three numbers and the date — no email, no IP "
-                "address. Published rows are deleted automatically after a year."
+                "Your keyboard, language, lesson and progress are kept in your own browser's "
+                "local storage and are not sent anywhere. Nothing is recorded about you unless "
+                "you choose to publish a score, and then only the nickname you type, three "
+                "numbers and the date — no email, no IP address. Published rows are deleted "
+                "automatically after a year."
+            </p>
+            <p>
+                "Signing in is optional and only carries progress between devices. It asks "
+                "Google for the "<code>"openid"</code>" scope alone, so this site never "
+                "receives your email address or name — which also makes account recovery "
+                "impossible. See "<a href="/privacy">"the privacy page"</a>"."
             </p>
             <p>
                 "While you practise, the page sends the server a stream of keystroke outcomes — "

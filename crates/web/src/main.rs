@@ -27,14 +27,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     use axum::{
         extract::{Path, State},
         response::{IntoResponse, Json},
-        routing::get,
+        routing::{get, post},
         Router,
     };
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use tower_http::{compression::CompressionLayer, trace::TraceLayer};
     use typing_web::{
-        server::{ws, AppState},
+        server::{routes, ws, AppState},
         shell, App,
     };
 
@@ -88,6 +88,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/ws", get(ws::handler))
         .route("/api/corpus/{language}", get(corpus))
         .route("/health", get(health))
+        // Sign-in. Inert unless GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and
+        // SESSION_SECRET are all set; see server::accounts.
+        .route("/auth/google/start", get(routes::google_start))
+        .route("/auth/google/callback", get(routes::google_callback))
+        .route("/auth/signout", post(routes::signout))
+        .route("/api/me", get(routes::me))
+        .route(
+            "/api/profile",
+            get(routes::load_profile)
+                .put(routes::save_profile)
+                .delete(routes::delete_profile),
+        )
         .leptos_routes(&state, routes, {
             let leptos_options = leptos_options.clone();
             move || shell(leptos_options.clone())
