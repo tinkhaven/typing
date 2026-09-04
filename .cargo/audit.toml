@@ -4,6 +4,15 @@
 # build. That is the behaviour we want — but it only stays useful if the
 # exceptions below are few, justified, and revisited. Each entry says what it is
 # and what would let us remove it.
+#
+# The policy that matters: **a vulnerability is never ignored here, only
+# `unmaintained` notices.** When RUSTSEC-2023-0071 (the Marvin timing
+# sidechannel in `rsa`, no fix available) turned up via jsonwebtoken's only
+# cmake-free RSA backend, the answer was to stop depending on it — RS256
+# verification moved to `ring`, which was already in the tree for rustls. See
+# crates/web/src/server/jwt.rs. Excusing a live advisory in an authentication
+# path would have been the wrong instinct, even though that particular attack
+# targets private-key operations this service never performs.
 
 [advisories]
 ignore = [

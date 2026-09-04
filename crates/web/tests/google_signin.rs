@@ -1,16 +1,15 @@
 //! The Google sign-in flow, end to end, against a stand-in provider.
 //!
-//! The unit tests in `server::auth` cover every decision that can be made
-//! without a network: PKCE, state, nonce, cookie hardening, user-id derivation.
-//! What they cannot cover is whether the pieces fit together — whether the token
-//! request has the shape a provider expects, whether a real RS256 signature is
-//! actually checked against a fetched key set, and whether a bad token is
-//! refused rather than shrugged off.
+//! The unit tests in `server::auth` and `server::jwt` cover every decision that
+//! can be made without a network. What they cannot cover is whether the pieces
+//! fit together: whether the token request has the shape a provider expects,
+//! whether a real RS256 signature is checked against a fetched key set, and
+//! whether a bad token is refused rather than shrugged off.
 //!
-//! So this stands up a minimal OpenID Connect provider on a local port, with a
-//! freshly generated RSA key, and runs the real client against it. The key is
-//! generated per test run rather than committed: a private key in a public
-//! repository would be wrong even as a fixture.
+//! So this stands up a minimal OpenID Connect provider on a local port and runs
+//! the real client against it, serving genuinely signed tokens from
+//! `tests/vectors`. Those were signed once with OpenSSL and the private key
+//! discarded — see the README there for why a key is not generated at test time.
 //!
 //! Only reachable with the `ssr` feature, which is where the server code lives.
 #![cfg(feature = "ssr")]
@@ -26,7 +25,6 @@ use axum::{
     Form, Json, Router,
 };
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
-use rsa::{pkcs1::EncodeRsaPrivateKey, traits::PublicKeyParts, RsaPrivateKey};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use typing_web::server::{
@@ -34,62 +32,36 @@ use typing_web::server::{
     session::now_secs,
 };
 
+/// Matches the vectors in `tests/vectors`.
 const CLIENT_ID: &str = "test-client.apps.googleusercontent.com";
-const CLIENT_SECRET: &str = "test-client-secret";
+const CLIENT_SECRET: &str = "the-stand-in-provider-shared-value";
 const ISSUER: &str = "https://accounts.google.test";
-const KEY_ID: &str = "test-key-1";
+const KEY_ID: &str = "vector-key-1";
+const NONCE: &str = "the-expected-nonce";
 
-/// How the stand-in provider should behave, so one server covers every case.
-#[derive(Clone, Default)]
-struct Behaviour {
-    /// Issue a token whose nonce is this instead of the requested one.
-    override_nonce: Option<String>,
-    /// Issue a token for this audience instead of our client id.
-    override_audience: Option<String>,
-    /// Issue a token that expired this long ago.
-    expired_by: Option<u64>,
-    /// Sign with a `kid` the published key set does not contain.
-    unknown_kid: bool,
-    /// Refuse the exchange with an OAuth error.
-    refuse: Option<String>,
-}
+const MODULUS: &str = include_str!("vectors/modulus.b64");
+const VALID: &str = include_str!("vectors/valid.jwt");
+const EXPIRED: &str = include_str!("vectors/expired.jwt");
+const WRONG_AUDIENCE: &str = include_str!("vectors/wrong_audience.jwt");
+const WRONG_ISSUER: &str = include_str!("vectors/wrong_issuer.jwt");
+const WRONG_NONCE: &str = include_str!("vectors/wrong_nonce.jwt");
+const NO_NONCE: &str = include_str!("vectors/no_nonce.jwt");
+const UNKNOWN_KID: &str = include_str!("vectors/unknown_kid.jwt");
 
 struct Fake {
-    private_pem: String,
-    modulus: String,
-    exponent: String,
-    behaviour: Mutex<Behaviour>,
+    /// The token to hand back, or an OAuth error to refuse with.
+    answer: Mutex<Result<&'static str, String>>,
+    /// How many times the key set has been fetched, to prove the refresh path.
+    jwks_fetches: Mutex<u32>,
     /// The form fields of the last token request, for assertions.
     last_request: Mutex<HashMap<String, String>>,
 }
 
-/// One RSA key for the whole test binary: generating 2048 bits is slow.
-fn key() -> &'static (String, String, String) {
-    static KEY: std::sync::OnceLock<(String, String, String)> = std::sync::OnceLock::new();
-    KEY.get_or_init(|| {
-        // rsa 0.9 is built against rand_core 0.6 while the crate itself uses
-        // rand 0.9, so the RNG has to come from rsa's own re-export or the trait
-        // bounds refer to two different rand_cores.
-        let mut rng = rsa::rand_core::OsRng;
-        let private = RsaPrivateKey::new(&mut rng, 2048).expect("generate an RSA key");
-        let pem = private
-            .to_pkcs1_pem(rsa::pkcs1::LineEnding::LF)
-            .expect("PEM")
-            .to_string();
-        let modulus = URL_SAFE_NO_PAD.encode(private.n().to_bytes_be());
-        let exponent = URL_SAFE_NO_PAD.encode(private.e().to_bytes_be());
-        (pem, modulus, exponent)
-    })
-}
-
 /// Starts the stand-in provider and returns a client pointed at it.
-async fn provider_with(behaviour: Behaviour) -> (OidcClient, Arc<Fake>) {
-    let (pem, modulus, exponent) = key().clone();
+async fn provider_serving(answer: Result<&'static str, String>) -> (OidcClient, Arc<Fake>) {
     let fake = Arc::new(Fake {
-        private_pem: pem,
-        modulus,
-        exponent,
-        behaviour: Mutex::new(behaviour),
+        answer: Mutex::new(answer),
+        jwks_fetches: Mutex::new(0),
         last_request: Mutex::new(HashMap::new()),
     });
 
@@ -120,10 +92,11 @@ async fn provider_with(behaviour: Behaviour) -> (OidcClient, Arc<Fake>) {
 }
 
 async fn serve_jwks(State(fake): State<Arc<Fake>>) -> Json<serde_json::Value> {
+    *fake.jwks_fetches.lock().expect("lock") += 1;
     Json(json!({
         "keys": [{
             "kty": "RSA", "use": "sig", "alg": "RS256",
-            "kid": KEY_ID, "n": fake.modulus, "e": fake.exponent,
+            "kid": KEY_ID, "n": MODULUS.trim(), "e": "AQAB",
         }]
     }))
 }
@@ -132,62 +105,30 @@ async fn serve_token(
     State(fake): State<Arc<Fake>>,
     Form(form): Form<HashMap<String, String>>,
 ) -> Json<serde_json::Value> {
-    let behaviour = fake.behaviour.lock().expect("lock").clone();
-    *fake.last_request.lock().expect("lock") = form.clone();
-
-    if let Some(error) = behaviour.refuse {
-        return Json(json!({"error": "invalid_grant", "error_description": error}));
+    *fake.last_request.lock().expect("lock") = form;
+    match fake.answer.lock().expect("lock").clone() {
+        Ok(token) => Json(json!({"id_token": token.trim(), "token_type": "Bearer"})),
+        Err(why) => Json(json!({"error": "invalid_grant", "error_description": why})),
     }
-
-    let now = now_secs();
-    let claims = json!({
-        "iss": ISSUER,
-        "sub": "subject-108121",
-        "aud": behaviour.override_audience.unwrap_or_else(|| CLIENT_ID.to_owned()),
-        "exp": match behaviour.expired_by { Some(ago) => now - ago, None => now + 300 },
-        "iat": now,
-        "nonce": behaviour
-            .override_nonce
-            .unwrap_or_else(|| form.get("nonce").cloned().unwrap_or_default()),
-    });
-
-    let mut header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::RS256);
-    header.kid = Some(if behaviour.unknown_kid {
-        "rotated-away".into()
-    } else {
-        KEY_ID.into()
-    });
-    let token = jsonwebtoken::encode(
-        &header,
-        &claims,
-        &jsonwebtoken::EncodingKey::from_rsa_pem(fake.private_pem.as_bytes()).expect("key"),
-    )
-    .expect("sign");
-
-    Json(json!({"id_token": token, "token_type": "Bearer"}))
 }
 
-/// The provider echoes the nonce back through the token request, the way a real
-/// one carries it from the authorize step.
-fn login_with_nonce(pending: &PendingLogin) -> PendingLogin {
-    pending.clone()
+/// A login whose nonce matches the one baked into the vectors.
+fn login() -> PendingLogin {
+    PendingLogin {
+        nonce: NONCE.to_owned(),
+        ..PendingLogin::new()
+    }
 }
 
 // ---------------------------------------------------------------------------
 
 #[tokio::test]
 async fn a_real_sign_in_succeeds_and_yields_only_a_subject() {
-    let pending = PendingLogin::new();
-    let (client, fake) = provider_with(Behaviour::default()).await;
+    let pending = login();
+    let (client, fake) = provider_serving(Ok(VALID)).await;
 
-    // The stand-in echoes back the nonce it is told to, as a real provider
-    // carries it from the authorize request. Set in its own scope so the lock is
-    // demonstrably released before anything is awaited.
-    {
-        fake.behaviour.lock().expect("lock").override_nonce = Some(pending.nonce.clone());
-    }
     let claims = client
-        .complete_login(&login_with_nonce(&pending), &pending.state, "the-code")
+        .complete_login(&pending, &pending.state, "the-code")
         .await
         .expect("sign-in succeeds");
 
@@ -195,7 +136,7 @@ async fn a_real_sign_in_succeeds_and_yields_only_a_subject() {
     assert_eq!(claims.iss, ISSUER);
     assert_eq!(claims.aud, CLIENT_ID);
 
-    // The token request must carry the PKCE verifier and the secret, and the
+    // The token request must carry the secret and the PKCE verifier, and the
     // verifier must be the one the challenge was derived from.
     let request = fake.last_request.lock().expect("lock").clone();
     assert_eq!(
@@ -203,33 +144,24 @@ async fn a_real_sign_in_succeeds_and_yields_only_a_subject() {
         Some("authorization_code")
     );
     assert_eq!(request.get("code").map(String::as_str), Some("the-code"));
-    assert_eq!(request.get("code_verifier"), Some(&pending.verifier));
     assert_eq!(
         request.get("client_secret").map(String::as_str),
         Some(CLIENT_SECRET)
     );
+    assert_eq!(request.get("code_verifier"), Some(&pending.verifier));
 
-    let challenge = URL_SAFE_NO_PAD.encode(Sha256::digest(
-        request.get("code_verifier").expect("verifier").as_bytes(),
-    ));
+    let challenge = URL_SAFE_NO_PAD.encode(Sha256::digest(request["code_verifier"].as_bytes()));
     assert_eq!(
         challenge,
         pending.challenge(),
-        "the verifier must match the challenge sent"
+        "verifier must match the challenge sent"
     );
 }
 
 #[tokio::test]
 async fn a_replayed_token_for_another_request_is_refused() {
-    let pending = PendingLogin::new();
-    let (client, fake) = provider_with(Behaviour {
-        // A token that is perfectly valid, but minted for a different request.
-        override_nonce: Some(PendingLogin::new().nonce),
-        ..Behaviour::default()
-    })
-    .await;
-    let _ = &fake;
-
+    let pending = login();
+    let (client, _) = provider_serving(Ok(WRONG_NONCE)).await;
     let verdict = client
         .complete_login(&pending, &pending.state, "the-code")
         .await;
@@ -237,16 +169,19 @@ async fn a_replayed_token_for_another_request_is_refused() {
 }
 
 #[tokio::test]
-async fn a_token_minted_for_another_client_is_refused() {
-    let pending = PendingLogin::new();
-    let (client, fake) = provider_with(Behaviour {
-        override_nonce: Some(pending.nonce.clone()),
-        override_audience: Some("someone-elses-client.apps.googleusercontent.com".into()),
-        ..Behaviour::default()
-    })
-    .await;
-    let _ = &fake;
+async fn a_token_with_no_nonce_at_all_is_refused() {
+    let pending = login();
+    let (client, _) = provider_serving(Ok(NO_NONCE)).await;
+    let verdict = client
+        .complete_login(&pending, &pending.state, "the-code")
+        .await;
+    assert_eq!(verdict.unwrap_err(), AuthError::NonceMissing);
+}
 
+#[tokio::test]
+async fn a_token_minted_for_another_client_is_refused() {
+    let pending = login();
+    let (client, _) = provider_serving(Ok(WRONG_AUDIENCE)).await;
     let verdict = client
         .complete_login(&pending, &pending.state, "the-code")
         .await;
@@ -257,16 +192,22 @@ async fn a_token_minted_for_another_client_is_refused() {
 }
 
 #[tokio::test]
-async fn an_expired_token_is_refused() {
-    let pending = PendingLogin::new();
-    let (client, _) = provider_with(Behaviour {
-        override_nonce: Some(pending.nonce.clone()),
-        // Well past the 60s leeway.
-        expired_by: Some(3_600),
-        ..Behaviour::default()
-    })
-    .await;
+async fn a_token_from_another_issuer_is_refused() {
+    let pending = login();
+    let (client, _) = provider_serving(Ok(WRONG_ISSUER)).await;
+    let verdict = client
+        .complete_login(&pending, &pending.state, "the-code")
+        .await;
+    assert!(
+        matches!(verdict, Err(AuthError::InvalidIdToken(_))),
+        "expected the issuer to be rejected, got {verdict:?}"
+    );
+}
 
+#[tokio::test]
+async fn an_expired_token_is_refused() {
+    let pending = login();
+    let (client, _) = provider_serving(Ok(EXPIRED)).await;
     let verdict = client
         .complete_login(&pending, &pending.state, "the-code")
         .await;
@@ -277,25 +218,28 @@ async fn an_expired_token_is_refused() {
 }
 
 #[tokio::test]
-async fn a_token_signed_by_an_unpublished_key_is_refused() {
-    let pending = PendingLogin::new();
-    let (client, _) = provider_with(Behaviour {
-        override_nonce: Some(pending.nonce.clone()),
-        unknown_kid: true,
-        ..Behaviour::default()
-    })
-    .await;
+async fn a_token_signed_by_an_unpublished_key_is_refused_after_one_refresh() {
+    let pending = login();
+    let (client, fake) = provider_serving(Ok(UNKNOWN_KID)).await;
 
     let verdict = client
         .complete_login(&pending, &pending.state, "the-code")
         .await;
     assert_eq!(verdict.unwrap_err(), AuthError::UnknownSigningKey);
+
+    // An unknown key id should prompt exactly one refetch, in case the provider
+    // rotated its keys — and then give up rather than loop.
+    assert_eq!(
+        *fake.jwks_fetches.lock().expect("lock"),
+        2,
+        "expected the initial fetch plus one refresh"
+    );
 }
 
 #[tokio::test]
 async fn a_mismatched_state_never_reaches_the_token_endpoint() {
-    let pending = PendingLogin::new();
-    let (client, fake) = provider_with(Behaviour::default()).await;
+    let pending = login();
+    let (client, fake) = provider_serving(Ok(VALID)).await;
 
     let verdict = client
         .complete_login(&pending, "not-the-state-we-issued", "the-code")
@@ -309,13 +253,8 @@ async fn a_mismatched_state_never_reaches_the_token_endpoint() {
 
 #[tokio::test]
 async fn a_provider_error_is_surfaced_not_swallowed() {
-    let pending = PendingLogin::new();
-    let (client, _) = provider_with(Behaviour {
-        refuse: Some("code already redeemed".into()),
-        ..Behaviour::default()
-    })
-    .await;
-
+    let pending = login();
+    let (client, _) = provider_serving(Err("code already redeemed".to_owned())).await;
     let verdict = client
         .complete_login(&pending, &pending.state, "stale-code")
         .await;
@@ -326,13 +265,31 @@ async fn a_provider_error_is_surfaced_not_swallowed() {
 }
 
 #[tokio::test]
+async fn the_key_set_is_cached_rather_than_fetched_per_token() {
+    let pending = login();
+    let (client, fake) = provider_serving(Ok(VALID)).await;
+    for _ in 0..3 {
+        client
+            .complete_login(&pending, &pending.state, "the-code")
+            .await
+            .expect("sign-in succeeds");
+    }
+    assert_eq!(
+        *fake.jwks_fetches.lock().expect("lock"),
+        1,
+        "the key set should be fetched once and reused"
+    );
+}
+
+#[tokio::test]
 async fn the_authorize_url_requests_only_openid() {
-    let (client, _) = provider_with(Behaviour::default()).await;
-    let url = authorize_url(client.provider(), &PendingLogin::new());
+    let (client, _) = provider_serving(Ok(VALID)).await;
+    let url = authorize_url(client.provider(), &login());
     assert!(url.contains("scope=openid"));
     assert!(
         !url.contains("email"),
         "an email scope would collect more than needed"
     );
     assert!(!url.contains("profile"));
+    let _ = now_secs();
 }

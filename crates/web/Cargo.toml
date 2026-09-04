@@ -44,12 +44,11 @@ tracing-subscriber = { version = "0.3", optional = true, features = ["env-filter
 # --- sign-in (server only) ---
 # Google OpenID Connect. Only the `openid` scope is ever requested, so no email
 # address or name is received; see server/auth.rs.
-# `rust_crypto` is not optional in practice: jsonwebtoken 11 requires a crypto
-# provider to be selected by feature and has no default, so without this every
-# ID token verification fails at runtime. The pure-Rust backend is chosen over
-# aws_lc_rs because the latter needs a C toolchain the runtime image does not
-# carry.
-jsonwebtoken = { version = "11", optional = true, features = ["rust_crypto"] }
+# RS256 verification is done in server/jwt.rs on top of `ring`, rather than with
+# a JWT library. jsonwebtoken's only RSA backend that builds without cmake pulls
+# in the `rsa` crate, which carries RUSTSEC-2023-0071 (Marvin timing sidechannel)
+# with no fixed release. `ring` is already here for rustls and has no advisory.
+ring = { version = "0.17", optional = true }
 # `rustls` is the feature name in reqwest 0.13 (it was `rustls-tls` in 0.12), and
 # webpki-roots bundles the trust store so verification does not depend on what
 # the container image happens to have installed.
@@ -65,11 +64,9 @@ aws-config = { version = "1", optional = true, default-features = false, feature
 aws-sdk-dynamodb = { version = "1", optional = true, default-features = false, features = ["rt-tokio", "default-https-client"] }
 
 [dev-dependencies]
-# Only to generate a throwaway RSA key inside the sign-in test. Generating one
-# at test time rather than committing a PEM keeps a private key out of a public
-# repository — and out of the way of the secret scanner, which would be right to
-# object to one.
-rsa = "0.9"
+# No RSA key generation here: the sign-in tests use pre-signed vectors under
+# tests/vectors, because generating a key at test time would mean depending on
+# the `rsa` crate and `cargo audit` reads dev-dependencies too.
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
 
 [features]
@@ -95,7 +92,7 @@ ssr = [
   "dep:tracing-subscriber",
   "dep:aws-config",
   "dep:aws-sdk-dynamodb",
-  "dep:jsonwebtoken",
+  "dep:ring",
   "dep:reqwest",
   "dep:hmac",
   "dep:sha2",

@@ -5,6 +5,7 @@
 pub mod accounts;
 pub mod auth;
 pub mod corpus;
+pub mod jwt;
 pub mod leaderboard;
 pub mod profiles;
 pub mod routes;

@@ -116,6 +116,12 @@ wasm client alongside the server.
   stripped upstream. The parser pads; it must not reject them.
 - Klavaro's lessons are grouped by keyboard region, not cumulative. Lesson 43 is
   symbols, not "everything".
+- **Do not reach for a JWT library.** RS256 verification lives in
+  `crates/web/src/server/jwt.rs` on top of `ring`, which is already in the tree
+  for rustls. `jsonwebtoken`'s only RSA backend that builds without cmake pulls
+  in `rsa`, and `rsa` carries RUSTSEC-2023-0071 with no fix — CI will fail the
+  build. The hand-written verifier is deliberately verification-only and never
+  reads `alg` from the token to pick a verifier.
 - **Never put `>` or `>=` in a `view!` attribute expression.** The macro scans
   for `>` to find the end of the tag, so `disabled=move || n >= MAX` closes the
   `<button>` early and the rest of your Rust becomes visible text on the page —

@@ -317,9 +317,9 @@ pub struct IdClaims {
 
 /// Checks the claims that a signature alone does not establish.
 ///
-/// `jsonwebtoken` verifies `iss`, `aud` and `exp` when told to; this covers the
-/// nonce, which it has no concept of, and which is the difference between
-/// accepting a token minted for this request and accepting a replayed one.
+/// [`check_claims`] covers the registered claims; this covers the nonce, which
+/// is the difference between accepting a token minted for this request and
+/// accepting a replayed one.
 pub fn check_nonce(claims: &IdClaims, expected: &str) -> Result<(), AuthError> {
     match claims.nonce.as_deref() {
         Some(actual) if actual == expected => Ok(()),
@@ -328,20 +328,44 @@ pub fn check_nonce(claims: &IdClaims, expected: &str) -> Result<(), AuthError> {
     }
 }
 
-/// Validation rules for a provider's ID tokens.
-pub fn validation(provider: &Provider) -> jsonwebtoken::Validation {
-    let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::RS256);
-    validation.set_audience(&[&provider.client_id]);
-    validation.iss = Some(provider.issuers.iter().cloned().collect::<HashSet<_>>());
-    validation.validate_exp = true;
-    // Google's tokens are short-lived; a minute of tolerance covers clock skew
-    // without meaningfully extending the window.
-    validation.leeway = 60;
-    validation.required_spec_claims = ["iss", "aud", "exp", "sub"]
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
-    validation
+/// Tolerance for clock skew when checking expiry.
+///
+/// Google's ID tokens are short-lived, so a minute covers a drifting clock
+/// without meaningfully widening the window a stolen token is usable in.
+pub const CLOCK_LEEWAY_SECONDS: u64 = 60;
+
+/// Checks every claim that a valid signature does not establish.
+///
+/// A signature only says Google minted the token. It does not say the token was
+/// minted *for this client*, *by the issuer we expect*, *recently*, or *for this
+/// particular sign-in* — which is what the checks here are for. The audience
+/// check is the important one: without it, a token minted for any other Google
+/// OAuth client would sign somebody in here.
+pub fn check_claims(
+    claims: &IdClaims,
+    provider: &Provider,
+    expected_nonce: &str,
+    now: u64,
+) -> Result<(), AuthError> {
+    let issuers: HashSet<&str> = provider.issuers.iter().map(String::as_str).collect();
+    if !issuers.contains(claims.iss.as_str()) {
+        return Err(AuthError::InvalidIdToken(format!(
+            "issued by {}, which is not an accepted issuer",
+            claims.iss
+        )));
+    }
+    if claims.aud != provider.client_id {
+        return Err(AuthError::InvalidIdToken(
+            "issued for a different client".to_owned(),
+        ));
+    }
+    if claims.exp + CLOCK_LEEWAY_SECONDS < now {
+        return Err(AuthError::InvalidIdToken("expired".to_owned()));
+    }
+    if claims.sub.is_empty() {
+        return Err(AuthError::InvalidIdToken("no subject".to_owned()));
+    }
+    check_nonce(claims, expected_nonce)
 }
 
 // ---------------------------------------------------------------------------
@@ -379,7 +403,7 @@ pub fn derive_user_id(pepper: &SigningKey, issuer: &str, subject: &str) -> Strin
 
 /// The provider's signing keys, and when they were fetched.
 struct CachedKeys {
-    keys: jsonwebtoken::jwk::JwkSet,
+    keys: super::jwt::Jwks,
     fetched_at: u64,
 }
 
@@ -465,21 +489,17 @@ impl OidcClient {
         body.id_token.ok_or(AuthError::NoIdToken)
     }
 
-    /// Finds the key a token was signed with, refreshing the set if need be.
-    async fn decoding_key(&self, kid: &str) -> Result<jsonwebtoken::DecodingKey, AuthError> {
-        // Cached set first.
-        if let Some(cached) = self.keys.read().await.as_ref() {
-            if now_secs().saturating_sub(cached.fetched_at) < JWKS_TTL_SECONDS {
-                if let Some(key) = key_from_set(&cached.keys, kid) {
-                    return key;
+    /// The cached key set, or a freshly fetched one.
+    async fn signing_keys(&self, refresh: bool) -> Result<super::jwt::Jwks, AuthError> {
+        if !refresh {
+            if let Some(cached) = self.keys.read().await.as_ref() {
+                if now_secs().saturating_sub(cached.fetched_at) < JWKS_TTL_SECONDS {
+                    return Ok(cached.keys.clone());
                 }
-                // A `kid` we have never seen usually means the provider rotated
-                // its keys early. Fall through and refetch rather than reject a
-                // perfectly good token.
             }
         }
 
-        let fetched: jsonwebtoken::jwk::JwkSet = self
+        let fetched: super::jwt::Jwks = self
             .http
             .get(&self.provider.jwks_uri)
             .send()
@@ -489,32 +509,39 @@ impl OidcClient {
             .await
             .map_err(|e| AuthError::TokenExchange(format!("unreadable signing keys: {e}")))?;
 
-        let key = key_from_set(&fetched, kid);
         *self.keys.write().await = Some(CachedKeys {
-            keys: fetched,
+            keys: fetched.clone(),
             fetched_at: now_secs(),
         });
-        key.unwrap_or(Err(AuthError::UnknownSigningKey))
+        Ok(fetched)
     }
 
-    /// Verifies an ID token's signature, registered claims and nonce.
+    /// Verifies an ID token's signature, then its claims and nonce.
+    ///
+    /// Signature before claims, always: nothing in the payload means anything
+    /// until it is established that the provider produced it.
     pub async fn verify_id_token(
         &self,
         id_token: &str,
         expected_nonce: &str,
     ) -> Result<IdClaims, AuthError> {
-        let header = jsonwebtoken::decode_header(id_token)
-            .map_err(|e| AuthError::InvalidIdToken(e.to_string()))?;
-        let kid = header.kid.ok_or(AuthError::UnknownSigningKey)?;
-        let key = self.decoding_key(&kid).await?;
+        let keys = self.signing_keys(false).await?;
+        let mut verdict = super::jwt::verify_rs256::<IdClaims>(id_token, &keys);
 
-        let data = jsonwebtoken::decode::<IdClaims>(id_token, &key, &validation(&self.provider))
-            .map_err(|e| AuthError::InvalidIdToken(e.to_string()))?;
+        // A key id we have not seen usually means the provider rotated its keys
+        // early. Refetch once before rejecting a token that is probably fine.
+        if matches!(verdict, Err(super::jwt::JwtError::UnknownKeyId(_))) {
+            let refreshed = self.signing_keys(true).await?;
+            verdict = super::jwt::verify_rs256::<IdClaims>(id_token, &refreshed);
+        }
 
-        // `jsonwebtoken` has no concept of a nonce, and it is what separates a
-        // token minted for this request from a replayed one.
-        check_nonce(&data.claims, expected_nonce)?;
-        Ok(data.claims)
+        let claims = verdict.map_err(|why| match why {
+            super::jwt::JwtError::UnknownKeyId(_) => AuthError::UnknownSigningKey,
+            other => AuthError::InvalidIdToken(other.to_string()),
+        })?;
+
+        check_claims(&claims, &self.provider, expected_nonce, now_secs())?;
+        Ok(claims)
     }
 
     /// Runs the whole callback: state check, code exchange, token verification.
@@ -531,23 +558,6 @@ impl OidcClient {
         }
         let id_token = self.exchange_code(code, &pending.verifier).await?;
         self.verify_id_token(&id_token, &pending.nonce).await
-    }
-}
-
-/// Turns the JWK with this `kid` into a decoding key, if the set has one.
-fn key_from_set(
-    set: &jsonwebtoken::jwk::JwkSet,
-    kid: &str,
-) -> Option<Result<jsonwebtoken::DecodingKey, AuthError>> {
-    let jwk = set.find(kid)?;
-    match &jwk.algorithm {
-        jsonwebtoken::jwk::AlgorithmParameters::RSA(rsa) => Some(
-            jsonwebtoken::DecodingKey::from_rsa_components(&rsa.n, &rsa.e)
-                .map_err(|e| AuthError::InvalidIdToken(format!("unusable signing key: {e}"))),
-        ),
-        // Google signs ID tokens with RS256. Anything else is not something to
-        // guess at.
-        _ => Some(Err(AuthError::UnknownSigningKey)),
     }
 }
 
@@ -895,22 +905,84 @@ mod tests {
     // ---- validation rules -----------------------------------------------
 
     #[test]
-    fn validation_pins_the_algorithm_audience_and_issuer() {
-        let provider = provider();
-        let validation = validation(&provider);
-        assert_eq!(validation.algorithms, vec![jsonwebtoken::Algorithm::RS256]);
-        assert!(validation.validate_exp);
-        assert!(validation
-            .aud
-            .as_ref()
-            .expect("audience pinned")
-            .contains(&provider.client_id));
-        let issuers = validation.iss.as_ref().expect("issuer pinned");
-        assert!(issuers.contains("https://accounts.google.com"));
-        for required in ["iss", "aud", "exp", "sub"] {
-            assert!(
-                validation.required_spec_claims.contains(required),
-                "{required}"
+    fn good_claims_are_accepted() {
+        assert_eq!(
+            check_claims(
+                &claims(Some("expected")),
+                &provider(),
+                "expected",
+                now_secs()
+            ),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn a_token_from_another_issuer_is_refused() {
+        let mut claims = claims(Some("expected"));
+        claims.iss = "https://evil.test".into();
+        assert!(matches!(
+            check_claims(&claims, &provider(), "expected", now_secs()),
+            Err(AuthError::InvalidIdToken(_))
+        ));
+    }
+
+    #[test]
+    fn a_token_minted_for_another_client_is_refused() {
+        // The confused-deputy case: a perfectly genuine Google token, issued to
+        // somebody else's OAuth client, must not sign anybody in here.
+        let mut claims = claims(Some("expected"));
+        claims.aud = "someone-elses.apps.googleusercontent.com".into();
+        assert!(matches!(
+            check_claims(&claims, &provider(), "expected", now_secs()),
+            Err(AuthError::InvalidIdToken(_))
+        ));
+    }
+
+    #[test]
+    fn expiry_is_enforced_with_a_little_tolerance() {
+        let mut claims = claims(Some("expected"));
+        claims.exp = 1_000;
+        assert_eq!(
+            check_claims(
+                &claims,
+                &provider(),
+                "expected",
+                1_000 + CLOCK_LEEWAY_SECONDS
+            ),
+            Ok(())
+        );
+        assert!(matches!(
+            check_claims(
+                &claims,
+                &provider(),
+                "expected",
+                1_001 + CLOCK_LEEWAY_SECONDS
+            ),
+            Err(AuthError::InvalidIdToken(_))
+        ));
+    }
+
+    #[test]
+    fn a_token_without_a_subject_is_refused() {
+        // The subject is the only thing this entire flow exists to obtain.
+        let mut claims = claims(Some("expected"));
+        claims.sub = String::new();
+        assert!(matches!(
+            check_claims(&claims, &provider(), "expected", now_secs()),
+            Err(AuthError::InvalidIdToken(_))
+        ));
+    }
+
+    #[test]
+    fn either_google_issuer_spelling_is_accepted() {
+        for issuer in GOOGLE_ISSUERS {
+            let mut claims = claims(Some("expected"));
+            claims.iss = issuer.to_owned();
+            assert_eq!(
+                check_claims(&claims, &provider(), "expected", now_secs()),
+                Ok(()),
+                "{issuer} should be accepted"
             );
         }
     }
