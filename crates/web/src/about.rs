@@ -37,11 +37,10 @@ pub fn About() -> impl IntoView {
 
             <h2>"What this site stores"</h2>
             <p>
+                "Nothing is tracked: no analytics, no advertising, no third-party scripts. "
                 "Your keyboard, language, lesson and progress are kept in your own browser's "
                 "local storage and are not sent anywhere. Nothing is recorded about you unless "
-                "you choose to publish a score, and then only the nickname you type, three "
-                "numbers and the date — no email, no IP address. Published rows are deleted "
-                "automatically after a year."
+                "you publish a score or sign in — and no cookie is set unless you sign in."
             </p>
             <p>
                 "Signing in is optional and only carries progress between devices. It asks "

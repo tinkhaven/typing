@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Tinkhaven Typing">
+  <title>Tinkhaven Typing</title>
+
+    <polygon points="46.00,36.30 56.00,26.30 56.00,39.30 46.00,49.30" fill="none" stroke="#24211e" stroke-width="2.0" stroke-linejoin="round"/>
+    <polygon points="8.00,36.30 46.00,36.30 46.00,49.30 8.00,49.30" fill="none" stroke="#24211e" stroke-width="2.0" stroke-linejoin="round"/>
+    <polygon points="8.00,21.30 18.00,11.30 56.00,11.30 46.00,21.30" fill="none" stroke="#24211e" stroke-width="2.0" stroke-linejoin="round"/>
+    <ellipse cx="17.75" cy="16.30" rx="3.6" ry="2.0" fill="none" stroke="#24211e" stroke-width="1.6"/>
+    <ellipse cx="27.25" cy="16.30" rx="3.6" ry="2.0" fill="none" stroke="#24211e" stroke-width="1.6"/>
+    <ellipse cx="36.75" cy="16.30" rx="3.6" ry="2.0" fill="none" stroke="#24211e" stroke-width="1.6"/>
+    <ellipse cx="46.25" cy="16.30" rx="3.6" ry="2.0" fill="none" stroke="#24211e" stroke-width="1.6"/>
+    <polygon points="46.00,21.30 56.00,11.30 56.00,26.30 46.00,36.30" fill="none" stroke="#24211e" stroke-width="2.0" stroke-linejoin="round"/>
+    <polygon points="8.00,21.30 46.00,21.30 46.00,36.30 8.00,36.30" fill="none" stroke="#24211e" stroke-width="2.0" stroke-linejoin="round"/>
+</svg>

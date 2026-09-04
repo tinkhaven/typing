@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 116" role="img" aria-label="Tinkhaven Typing">
+  <title>Tinkhaven Typing</title>
+
+    <polygon points="134.00,33.30 144.00,23.30 144.00,36.30 134.00,46.30" fill="#98907f"/>
+    <polygon points="96.00,33.30 134.00,33.30 134.00,46.30 96.00,46.30" fill="#b9b0a2"/>
+    <polygon points="96.00,18.30 106.00,8.30 144.00,8.30 134.00,18.30" fill="#4a86e8"/>
+    <ellipse cx="105.75" cy="15.60" rx="3.6" ry="2.0" fill="#9a9ae0"/><rect x="102.15" y="13.30" width="7.2" height="2.3" fill="#9a9ae0"/><ellipse cx="105.75" cy="13.30" rx="3.6" ry="2.0" fill="#c8c8ff"/>
+    <ellipse cx="115.25" cy="15.60" rx="3.6" ry="2.0" fill="#d09090"/><rect x="111.65" y="13.30" width="7.2" height="2.3" fill="#d09090"/><ellipse cx="115.25" cy="13.30" rx="3.6" ry="2.0" fill="#f2b6b6"/>
+    <ellipse cx="124.75" cy="15.60" rx="3.6" ry="2.0" fill="#8ad2a2"/><rect x="121.15" y="13.30" width="7.2" height="2.3" fill="#8ad2a2"/><ellipse cx="124.75" cy="13.30" rx="3.6" ry="2.0" fill="#b6f2c6"/>
+    <ellipse cx="134.25" cy="15.60" rx="3.6" ry="2.0" fill="#d0d068"/><rect x="130.65" y="13.30" width="7.2" height="2.3" fill="#d0d068"/><ellipse cx="134.25" cy="13.30" rx="3.6" ry="2.0" fill="#f2f296"/>
+    <polygon points="134.00,18.30 144.00,8.30 144.00,23.30 134.00,33.30" fill="#1f4f9c"/>
+    <polygon points="96.00,18.30 134.00,18.30 134.00,33.30 96.00,33.30" fill="#2f6fd0"/>
+    <text x="120" y="80" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,'DejaVu Sans',sans-serif" font-size="22" font-weight="650" letter-spacing="-0.26" fill="#f2ece4" text-anchor="middle">Tinkhaven Typing</text>
+    <text x="120" y="100.2" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,'DejaVu Sans',sans-serif" font-size="9.24" fill="#f2ece4" opacity=".62" text-anchor="middle">Learn to touch type</text>
+</svg>

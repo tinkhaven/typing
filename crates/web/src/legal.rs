@@ -1,224 +1,196 @@
-//! Privacy policy and terms.
+//! Privacy policy and terms of use.
 //!
-//! Written against what the deployment actually does, not from a template. Every
-//! factual claim here was checked against the running system: the load
-//! balancer's access logging is off, the container logs carry no visitor IP
-//! addresses, and the only thing written to the database is what a visitor
-//! chooses to publish.
+//! Written to match the house style already published at
+//! `app.tinkhaven.com/privacy` and `/terms`: short sections, plain language, and
+//! the company details kept on the shared legal notice rather than repeated.
 //!
-//! Keep it that way. If a change starts collecting something — an analytics
-//! script, a cookie, an IP in a log line — this page is part of the change, and
-//! a policy that overstates the restraint is worse than no policy at all.
+//! Every factual claim here was checked against the running system before being
+//! written: the load balancer's access logging is off, the container log carries
+//! no visitor IP addresses, and nothing reaches the database unless a visitor
+//! publishes a score or signs in. Keep it that way. If a change starts
+//! collecting something, this page is part of that change — a privacy notice
+//! that overstates the restraint is worse than none at all.
 
 use leptos::prelude::*;
 
-/// The operator of this deployment.
-///
-/// GDPR Article 13(1)(a) requires the controller's identity and contact details,
-/// so these must be real before the site can be said to have a lawful privacy
-/// notice. They are placeholders in the repository because only the operator can
-/// supply them; [`operator_details_published`] reports whether they still are,
-/// and the page says so plainly rather than pretending.
-pub const OPERATOR_NAME: &str = "REPLACE ME: legal entity or individual's name";
-/// Postal address of the operator.
-pub const OPERATOR_ADDRESS: &str = "REPLACE ME: postal address";
-/// Where a visitor can exercise their rights.
-pub const OPERATOR_EMAIL: &str = "REPLACE ME: contact email address";
+/// The controller, as published on the shared legal notice.
+pub const CONTROLLER: &str = "Tinkhaven 2.0 BV";
 
-/// Whether the operator has filled in who they are.
-pub fn operator_details_published() -> bool {
-    ![OPERATOR_NAME, OPERATOR_ADDRESS, OPERATOR_EMAIL]
-        .iter()
-        .any(|value| value.starts_with("REPLACE ME"))
-}
+/// Where to write about anything on these pages.
+pub const PRIVACY_EMAIL: &str = "privacy@tinkhaven.com";
 
-/// Shown while the operator details are still placeholders.
-#[component]
-fn UnconfiguredNotice() -> impl IntoView {
-    (!operator_details_published()).then(|| {
-        view! {
-            <p class="notice notice-problem">
-                <strong>"This deployment has not published its operator details."</strong>
-                " Until the name, address and contact address below are filled in, this
-                page does not meet the identification requirement in Article 13 of the
-                GDPR. If you are running this, edit "
-                <code>"crates/web/src/legal.rs"</code>"."
-            </p>
-        }
-    })
-}
+/// The shared legal notice carrying the full company details.
+pub const IMPRINT_URL: &str = "https://app.tinkhaven.com/imprint";
+
+/// Shown under each page title.
+pub const LAST_UPDATED: &str = "Last updated: 2026";
 
 /// The privacy policy.
 #[component]
 pub fn Privacy() -> impl IntoView {
     view! {
-        <section class="prose">
-            <h1>"Privacy"</h1>
+        <section class="legal">
+            <header class="legal-header">
+                <h1>"Privacy Policy"</h1>
+                <p class="legal-meta">{LAST_UPDATED}</p>
+            </header>
 
-            <UnconfiguredNotice />
+            <div class="at-a-glance">
+                <h2>"At a glance"</h2>
+                <ul>
+                    <li>"Nothing is tracked. No analytics, no advertising, no third-party
+                        scripts — there are none on the page at all."</li>
+                    <li>"Your settings and your scores are kept in your own browser, not
+                        on our servers."</li>
+                    <li>"Everything runs in the EU. There is no other processor and no
+                        content delivery network in front of the site."</li>
+                    <li class="qualified">"Two things are optional and up to you:
+                        publishing a score to the leaderboard, and signing in to carry
+                        progress between devices. Do neither and this site stores nothing
+                        about you."</li>
+                    <li class="qualified">"No cookies at all unless you sign in — and then
+                        exactly one, to keep you signed in. No consent banner is needed
+                        for it."</li>
+                </ul>
+            </div>
 
-            <p class="lede">
-                "The short version: no analytics, no tracking, and nothing stored about
-                you unless you ask for it. Your settings and scores live in your own
-                browser. Two things are optional and deliberate: publishing a score to
-                the leaderboard, and signing in to carry progress between devices. Signing
-                in sets one cookie and nothing else; without it there are no cookies at
-                all."
+            <h2>"Who we are"</h2>
+            <p>
+                "The data controller is "{CONTROLLER}" (Belgium). Contact: "
+                <a href={format!("mailto:{PRIVACY_EMAIL}")}>{PRIVACY_EMAIL}</a>
+                ". Full company details are on our "
+                <a href={IMPRINT_URL} rel="noreferrer">"legal notice"</a>"."
             </p>
 
-            <h2>"Who is responsible"</h2>
+            <h2>"This website"</h2>
             <p>
-                {OPERATOR_NAME}", "{OPERATOR_ADDRESS}". For anything on this page, "
-                "including a request to exercise your rights, write to "
-                <strong>{OPERATOR_EMAIL}</strong>"."
+                "typing.tinkhaven.com is a touch typing tutor. It uses no analytics or
+                trackers and embeds no third-party scripts. It sets no cookies unless you
+                sign in, so no cookie consent is required. It is served from AWS data
+                centres in Ireland (eu-west-1)."
+            </p>
+            <p>
+                "Your keyboard layout, languages, current lesson and your best scores are
+                stored in your browser's own local storage. That data stays on your
+                device, is never sent to us, and clearing your browser's site data for
+                this domain deletes it."
             </p>
 
-            <h2>"What happens when you just use the site"</h2>
+            <h2>"What we process"</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">"What"</th>
+                        <th scope="col">"When"</th>
+                        <th scope="col">"Why, and for how long"</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>"Nothing"</td>
+                        <td>"Ordinary use"</td>
+                        <td>"No cookie, no identifier, no record."</td>
+                    </tr>
+                    <tr>
+                        <td>"Keystroke outcomes — whether each keystroke was right, and
+                            the gap since the previous one. Never which key."</td>
+                        <td>"While an exercise is running"</td>
+                        <td>"So the server can score a run itself rather than trust the
+                            browser's arithmetic, which is what makes a shared
+                            leaderboard mean anything. Held in memory for the exercise,
+                            then discarded. Necessary to provide the feature you asked
+                            for, GDPR Art. 6(1)(b)."</td>
+                    </tr>
+                    <tr>
+                        <td>"A nickname you type, your speed, accuracy, fluidness and the
+                            date"</td>
+                        <td>"Only if you publish a score"</td>
+                        <td>"To show the leaderboard. Consent, Art. 6(1)(a), given by
+                            pressing the button. Deleted automatically after one year."</td>
+                    </tr>
+                    <tr>
+                        <td>"A pseudonymous identifier and the same progress your browser
+                            already holds"</td>
+                        <td>"Only if you sign in"</td>
+                        <td>"To carry progress between your devices. Consent,
+                            Art. 6(1)(a). Deleted on request, or automatically after two
+                            years of not being used."</td>
+                    </tr>
+                </tbody>
+            </table>
             <p>
-                "Nothing is recorded. No cookie is set, no identifier is assigned, and no
-                analytics or tracking script runs — there are none on the page at all.
-                That remains true for as long as you do not sign in."
-            </p>
-            <p>
-                "Your keyboard layout, interface language, practice language, current
-                module and lesson, along with your best score per module, how many
-                exercises you have finished and the highest Basic lesson you have
-                cleared, are stored in your browser's own local storage. That data stays
-                on your device. It is not sent to the server, and the operator cannot
-                see it. Clearing your browser's site data for this domain deletes it."
+                "Hosting providers may briefly process IP addresses in technical logs to
+                deliver content and for security. We do not: load-balancer access logging
+                is switched off and no visitor IP address is written to our application
+                logs."
             </p>
 
-            <h2>"If you sign in"</h2>
+            <h2>"Signing in"</h2>
             <p>
-                "Signing in is optional and exists for one reason: to carry your progress
-                between devices. Everything works without it."
-            </p>
-            <p>
-                "Sign-in uses Google. The only thing asked of Google is the "
+                "Signing in is optional and exists only to carry your progress between
+                devices. It uses Google, and the only thing asked of Google is the "
                 <code>"openid"</code>" scope — deliberately not "<code>"email"</code>
-                " and not "<code>"profile"</code>". Google therefore returns a
-                pseudonymous subject identifier and nothing else. "
+                " and not "<code>"profile"</code>". "
                 <strong>
-                    "This site never receives your email address or your name, and
+                    "We therefore never receive your email address or your name, and
                     cannot contact or identify you."
                 </strong>
+                " Google returns a pseudonymous identifier, and even that is not stored
+                as-is: what we keep is a keyed hash of it."
             </p>
             <p>
-                "That identifier is not stored either. What is stored is a keyed hash of
-                it, so the record cannot be matched back to a Google account without a
-                secret held only by the server. Against that hash sits exactly the same
-                progress your browser already keeps: best score per module, how many
-                exercises you have finished, and how far through the Basic lessons you
-                have got."
+                "One cookie is set, holding a signed session. It carries no tracking
+                identifier, is not readable by any other site, lasts 90 days and is
+                removed when you sign out. It is strictly necessary for signing in, which
+                is why there is no banner asking about it."
             </p>
             <p>
-                "One cookie is set, holding a signed session — no tracking identifier and
-                nothing readable by anyone else. It is strictly necessary for signing in,
-                which is why there is no consent banner asking about it; if you do not
-                sign in, it is never set. It lasts 90 days and is removed when you sign
-                out. Profiles nobody has touched for two years are deleted automatically."
+                "There is a "<strong>"Delete my data"</strong>" button beside the sign-out
+                link that erases your stored profile immediately, without involving us."
             </p>
             <p>
-                "The legal basis is your consent, given by choosing to sign in. There is
-                a "<strong>"Delete my data"</strong>" button next to the sign-out link
-                that erases the stored profile immediately, without asking anyone."
-            </p>
-            <p>
-                "Google's own handling of your sign-in — that you authenticated, and when
-                — is Google's processing under its own privacy policy, not something this
-                site controls or can see."
-            </p>
-            <p>
-                "The consequence of holding so little is worth stating plainly: "
+                "Because we hold no email address, "
                 <strong>"there is no account recovery"</strong>
                 ". If you lose access to your Google account, the progress behind it
-                cannot be reached by you, by us, or by anybody — because there is nothing
-                stored that could prove it was yours."
-            </p>
-
-            <h2>"What crosses the network while you type"</h2>
-            <p>
-                "Keystrokes are judged in your browser, not on the server. While an
-                exercise is running, the page sends the server a stream of outcomes:
-                for each keystroke, whether it matched what was asked for and how long
-                after the previous one it arrived. It never sends which key you pressed."
-            </p>
-            <p>
-                "This exists so the server can score a run itself rather than take the
-                browser's word for it, which is what makes a shared leaderboard mean
-                anything. The stream is held in memory for the duration of the exercise
-                and then discarded. It is not written to disk and not linked to any
-                identifier."
-            </p>
-
-            <h2>"If you publish a score"</h2>
-            <p>
-                "Publishing is a deliberate act: you type a nickname and press a button.
-                Doing so records the nickname you chose, your speed, accuracy and
-                fluidness, and the date — and nothing else. No email address, no account,
-                no IP address."
-            </p>
-            <p>
-                "The nickname is whatever you type. It does not have to be, and should
-                not be, your name. Entries are deleted automatically one year after they
-                are set."
-            </p>
-            <p>
-                "The legal basis is your consent, given by pressing the button. You can
-                withdraw it by asking for the entry to be removed."
-            </p>
-
-            <h2>"Logs"</h2>
-            <p>
-                "The server writes operational logs — that it started, that it loaded its
-                practice text, and any errors. Load-balancer access logging is switched
-                off and visitor IP addresses are not written to the application log.
-                Amazon Web Services, as the hosting provider, processes the connection
-                itself in order to route it; that is inherent to serving a web page over
-                the internet."
-            </p>
-
-            <h2>"Where the data is"</h2>
-            <p>
-                "Everything runs in Amazon Web Services' Ireland region (eu-west-1) and
-                stays in the European Union. AWS acts as a processor on the operator's
-                behalf. There are no other processors, no third-party embeds and no
-                content delivery network in front of the site."
+                cannot be reached by you or by us. That is the trade for holding so
+                little. Google's own record that you signed in is Google's processing,
+                under its own privacy policy."
             </p>
 
             <h2>"Your rights"</h2>
             <p>
-                "Under the GDPR you may ask for access to your personal data, and for its
-                correction, erasure or restriction; you may object to processing; and you
-                may ask for it in a portable form. Write to the address above."
+                "Under the GDPR you may request access, rectification, erasure,
+                restriction, portability, and object to processing — email "
+                <a href={format!("mailto:{PRIVACY_EMAIL}")}>{PRIVACY_EMAIL}</a>
+                ". You may also lodge a complaint with your supervisory authority (in
+                Belgium, the Gegevensbeschermingsautoriteit / APD)."
             </p>
             <p>
                 "In practice there is little to ask about, because little is held. If you
                 are signed in, the "<strong>"Delete my data"</strong>" button does the
-                whole of access-and-erasure for your profile without involving anybody —
-                it is your data and it should not need a letter."
-            </p>
-            <p>
-                "A published leaderboard entry is identified solely by a nickname you
-                invented, so please quote the nickname and roughly when you set it. That
-                also means the operator has no way to verify a nickname is yours; a
-                request to remove one will be honoured anyway, which is the trade-off that
-                keeping no identity brings."
-            </p>
-            <p>
-                "You can also complain to a supervisory authority. In Belgium that is the
-                Data Protection Authority, "
-                <a href="https://www.dataprotectionauthority.be/" rel="noreferrer">
-                    "dataprotectionauthority.be"
-                </a>"."
+                whole of erasure without a letter. A published leaderboard entry is
+                identified only by a nickname you invented, so please quote it and roughly
+                when you set it — which also means we cannot verify that a nickname is
+                yours. We will honour the request anyway; that is the trade-off of keeping
+                no identity."
             </p>
 
             <h2>"Changes"</h2>
             <p>
                 "This site is open source, so changes to what it does are visible in its
-                history. If it starts collecting something it does not collect today,
-                this page changes in the same commit."
+                history. If it starts collecting something it does not collect today, this
+                page changes in the same commit. The date above reflects the latest
+                version."
             </p>
+
+            <div class="contact">
+                <p>
+                    "Questions about any of this: "
+                    <a href={format!("mailto:{PRIVACY_EMAIL}")}>{PRIVACY_EMAIL}</a>
+                    " · "<a href="/terms">"Terms of Use"</a>
+                    " · "<a href={IMPRINT_URL} rel="noreferrer">"Legal notice"</a>
+                </p>
+            </div>
         </section>
     }
 }
@@ -227,64 +199,98 @@ pub fn Privacy() -> impl IntoView {
 #[component]
 pub fn Terms() -> impl IntoView {
     view! {
-        <section class="prose">
-            <h1>"Terms of use"</h1>
+        <section class="legal">
+            <header class="legal-header">
+                <h1>"Terms of Use"</h1>
+                <p class="legal-meta">{LAST_UPDATED}</p>
+            </header>
 
-            <UnconfiguredNotice />
-
-            <h2>"What this is"</h2>
             <p>
-                "A free touch-typing tutor, offered as-is by "{OPERATOR_NAME}". It is a
-                hobby deployment of an open-source program, not a commercial service.
-                There is no uptime commitment, no warranty, and no guarantee that scores
-                or leaderboard entries will survive — the software is provided without
-                warranty of any kind, as the GNU General Public Licence sets out."
+                "These Terms govern your use of Tinkhaven Typing (the \u{201c}Site\u{201d}),
+                provided by "{CONTROLLER}" (\u{201c}Tinkhaven\u{201d}, \u{201c}we\u{201d}).
+                By using the Site you agree to these Terms."
             </p>
 
-            <h2>"The software"</h2>
+            <h2>"The service"</h2>
+            <p>
+                "The Site is a free touch typing tutor. There is nothing to buy, no
+                subscription and no account required. We may change or withdraw it at any
+                time, and we do not promise it will be available without interruption."
+            </p>
+
+            <h2>"Licence"</h2>
             <p>
                 "Tinkhaven Typing is a web port of "
                 <a href="https://klavaro.sourceforge.io/" rel="noreferrer">"Klavaro"</a>
-                " by Felipe Emmanuel Ferreira de Castro, and is distributed under the GNU
-                General Public Licence, version 3 or later. You are free to use, study,
-                share and modify it. The source is at "
+                " by Felipe Emmanuel Ferreira de Castro, and is free software under the "
+                "GNU General Public Licence, version 3 or later. You may use, study, share
+                and modify it on those terms. The source is at "
                 <a href="https://github.com/tinkhaven/typing" rel="noreferrer">
                     "github.com/tinkhaven/typing"
-                </a>", which is also where the corresponding source for the WebAssembly
-                this page runs can be found."
+                </a>", which is also the corresponding source for the WebAssembly this
+                page runs."
+            </p>
+            <p>
+                "The licence covers the software. It grants no rights to the Tinkhaven
+                name or branding."
             </p>
 
-            <h2>"The leaderboard"</h2>
+            <h2>"Acceptable use"</h2>
             <p>
-                "Please pick a nickname that is not offensive and is not somebody else's
-                name or personal data. Entries that are may be removed without notice.
-                Deliberately fabricating results spoils the board for everyone; the server
+                "Use the Site lawfully and do not misuse our infrastructure — for example
+                by attempting to disrupt or overload it. On the leaderboard, please choose
+                a nickname that is not offensive and is not somebody else\u{2019}s name or
+                personal data; entries that are may be removed without notice. The server
                 scores runs itself and rejects impossible ones, but it is not proof
-                against someone determined, and it does not try to be."
+                against someone determined to fake a result, and it does not try to be."
             </p>
 
-            <h2>"Liability"</h2>
+            <h2>"Intellectual property"</h2>
             <p>
-                "To the extent the law allows, the operator is not liable for any loss
-                arising from use of this site. Nothing here limits rights you have as a
-                consumer that cannot be limited by agreement."
+                "The software is licensed as above. The Tinkhaven name, logo and branding
+                are ours and these Terms grant no rights to them. Klavaro\u{2019}s data
+                files and lessons remain the work of their author, reused under the GPL."
             </p>
+
+            <h2>"Disclaimer and liability"</h2>
+            <p>
+                "The Site is provided \u{201c}as is\u{201d} and without warranty of any
+                kind, as the GNU General Public Licence sets out. Speed, accuracy and
+                fluidness figures are measurements of practice, not a certification of
+                anything. Scores, progress and leaderboard entries may be lost. To the
+                extent permitted by law, Tinkhaven is not liable for indirect or
+                consequential damages. Nothing here limits liability that cannot be
+                excluded under Belgian or EU law, including your statutory consumer
+                rights."
+            </p>
+
+            <h2>"Privacy"</h2>
+            <p>
+                "Our "<a href="/privacy">"Privacy Policy"</a>
+                " explains how we handle data — in short, we hold almost none."
+            </p>
+
+            <h2>"Changes"</h2>
+            <p>
+                "We may update these Terms; the date above reflects the latest version.
+                Continued use means acceptance."
+            </p>
+
+            <h2>"Governing law"</h2>
+            <p>
+                "These Terms are governed by Belgian law, and the courts of Belgium have
+                jurisdiction, without affecting any mandatory consumer protections
+                available to you where you live."
+            </p>
+
+            <div class="contact">
+                <p>
+                    "Contact: "
+                    <a href={format!("mailto:{PRIVACY_EMAIL}")}>{PRIVACY_EMAIL}</a>
+                    " · "<a href="/privacy">"Privacy Policy"</a>
+                    " · "<a href={IMPRINT_URL} rel="noreferrer">"Legal notice"</a>
+                </p>
+            </div>
         </section>
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_placeholder_check_notices_unfilled_details() {
-        // The whole point of the notice is that it cannot be forgotten, so this
-        // guards the detection rather than the constants themselves.
-        assert!(
-            !operator_details_published(),
-            "the repository ships placeholders; if this fails, someone filled them \
-             in and should update this test to assert the opposite"
-        );
     }
 }

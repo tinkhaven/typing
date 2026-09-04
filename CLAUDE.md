@@ -17,7 +17,14 @@ Read [README.md](README.md) for the architecture and
 - specific AWS profile names, bucket names, cluster names, or role names
 - domains, hostnames, or IPs belonging to a real deployment
 - local filesystem paths (`/Users/...`, `/home/...`)
-- anybody's email address other than the one already in `Cargo.toml`
+- anybody's *personal* email address
+
+The exception is the company's own published contact details — controller name,
+`privacy@tinkhaven.com`, the link to the legal notice. GDPR Article 13 requires
+those to be published, they are already public at `app.tinkhaven.com/imprint`,
+and a privacy policy without them is not a lawful notice. They live in
+`crates/web/src/legal.rs`. Full postal address and company numbers stay on the
+shared legal notice rather than being repeated here.
 
 Deployment-specific values belong in `infra/terraform.tfvars` (gitignored) or in
 the operator's shell environment. Terraform variables for such values must have

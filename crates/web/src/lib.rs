@@ -51,6 +51,15 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
             <head>
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+                <meta property="og:title" content="Tinkhaven Typing" />
+                <meta
+                    property="og:description"
+                    content="Learn to touch type in your browser. A web port of the Klavaro typing tutor."
+                />
+                <meta property="og:type" content="website" />
+                <meta property="og:image" content="/social-preview.png" />
+                <meta name="twitter:card" content="summary_large_image" />
                 <meta
                     name="description"
                     content="Learn to touch type in your browser. A web port of the Klavaro typing tutor."
@@ -102,8 +111,13 @@ fn Header() -> impl IntoView {
     view! {
         <header class="site-header">
             <A href="/" attr:class="brand">
-                <span class="brand-name">{move || locale().text(Msg::AppName)}</span>
-                <span class="brand-tagline">{move || locale().text(Msg::Tagline)}</span>
+                // Decorative: the wordmark beside it already says the name, so
+                // announcing it twice to a screen reader is noise.
+                <img class="brand-mark" src="/logo.svg" alt="" width="34" height="34" />
+                <span class="brand-words">
+                    <span class="brand-name">{move || locale().text(Msg::AppName)}</span>
+                    <span class="brand-tagline">{move || locale().text(Msg::Tagline)}</span>
+                </span>
             </A>
 
             <div class="pickers">
